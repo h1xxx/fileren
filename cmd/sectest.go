@@ -18,14 +18,18 @@ import (
 
 type targetT struct {
 	ip   string
-	tcp  map[string]portT
-	udp  map[string]portT
+	tcp  map[int]portT
+	udp  map[int]portT
 	cmds map[string]cmdT
 
-	wg *sync.WaitGroup
+	tcpScanned  bool
+	tcp1Scanned bool
+	tcp2Scanned bool
+	udpScanned  bool
+	wg          *sync.WaitGroup
 }
 
-// status: "ok" or "error"
+// status: "ok", "error" or "done"
 type cmdT struct {
 	name     string
 	bin      string
@@ -38,10 +42,10 @@ type cmdT struct {
 }
 
 type portT struct {
-	done   bool
-	isSsh  bool
-	isHttp bool
-	isApi  bool
+	started bool
+	service string
+	product string
+	ver     string
 }
 
 var MU = &sync.Mutex{}
@@ -49,12 +53,13 @@ var MU = &sync.Mutex{}
 func main() {
 	var t targetT
 	t.ip = "scanme.nmap.org"
-	t.tcp = make(map[string]portT)
-	t.udp = make(map[string]portT)
+	t.tcp = make(map[int]portT)
+	t.udp = make(map[int]portT)
 	t.cmds = make(map[string]cmdT)
 
-	os.MkdirAll(fp.Join(t.ip, "nmap"), 0750)
 	t.wg = &sync.WaitGroup{}
+
+	os.MkdirAll(fp.Join(t.ip, "nmap"), 0750)
 
 	fmt.Println("starting all nmap scans...")
 	t.wg.Add(5)
@@ -74,11 +79,48 @@ func main() {
 	c = t.makeNmapCmd("nmap_udp_full", "--top-ports 1000 -sUV")
 	go t.nmapRun(c)
 
+	for {
+		time.Sleep(3 * time.Second)
+		for p, info := range t.tcp {
+			if !info.started {
+				// cmon do someting
+				info.started = true
+				t.tcp[p] = info
+			}
+		}
+
+		for p, info := range t.udp {
+			if !info.started {
+				// cmon do someting
+				info.started = true
+				t.udp[p] = info
+			}
+		}
+
+		if t.portsStarted() && t.tcpScanned && t.udpScanned {
+			break
+		}
+	}
+
 	t.wg.Wait()
 	t.printInfo()
 }
 
-func (t targetT) makeNmapCmd(name, argsS string) cmdT {
+func (t *targetT) portsStarted() bool {
+	for _, info := range t.tcp {
+		if !info.started {
+			return false
+		}
+	}
+	for _, info := range t.udp {
+		if !info.started {
+			return false
+		}
+	}
+	return true
+}
+
+func (t *targetT) makeNmapCmd(name, argsS string) cmdT {
 	var c cmdT
 	c.name = name
 	c.bin = "nmap"
@@ -108,7 +150,7 @@ func (t targetT) makeNmapCmd(name, argsS string) cmdT {
 	return c
 }
 
-func (t targetT) nmapRun(c cmdT) {
+func (t *targetT) nmapRun(c cmdT) {
 	outFile := fp.Join(t.ip, c.name)
 
 	// execute nmap only if scan is not already completed
@@ -128,16 +170,65 @@ func (t targetT) nmapRun(c cmdT) {
 	errExit(err)
 
 	MU.Lock()
-	t.cmds[c.name] = c
 	if c.status == "" {
 		fmt.Printf("%s already done; skipping.\n", c.name)
+		c.status = "done"
 	} else {
 		fmt.Printf("%s done in %s; status: %s\n",
 			c.name, c.runTime.Round(time.Second), c.status)
 	}
+	t.cmds[c.name] = c
+	t.getTestPorts(c)
 	MU.Unlock()
 
+	switch c.name {
+	case "nmap_tcp_fast_1":
+		t.tcp1Scanned = true
+	case "nmap_tcp_fast_2":
+		t.tcp2Scanned = true
+	case "nmap_udp_fast":
+		t.udpScanned = true
+	}
+
+	if t.tcp1Scanned && t.tcp2Scanned {
+		t.tcpScanned = true
+	}
+
 	t.wg.Done()
+}
+
+func (t *targetT) getTestPorts(c cmdT) {
+	switch c.name {
+	case "nmap_tcp_fast_1", "nmap_tcp_fast_2":
+		for _, p := range c.nmapScan.Ports {
+			if p.State.State != "open" {
+				continue
+			}
+
+			var info portT
+
+			info.service = p.Service.Name
+			info.product = p.Service.Product
+			info.ver = p.Service.Ver
+
+			t.tcp[p.PortId] = info
+		}
+
+	case "nmap_udp_fast":
+		for _, p := range c.nmapScan.Ports {
+			if p.State.State != "open" {
+				continue
+			}
+
+			var info portT
+
+			info.service = p.Service.Name
+			info.product = p.Service.Product
+			info.ver = p.Service.Ver
+
+			t.udp[p.PortId] = info
+		}
+	}
 }
 
 func runCmd(c *cmdT) {
@@ -155,20 +246,20 @@ func runCmd(c *cmdT) {
 	c.runTime = time.Since(c.start)
 }
 
-func (t targetT) printInfo() {
+func (t *targetT) printInfo() {
 	fmt.Printf("\nip:\t\t%s\n", t.ip)
 
 	for p, k := range t.tcp {
-		fmt.Printf("tcp %s:\t\t%+v\n", p, k)
+		fmt.Printf("tcp %d:\t\t%+v\n", p, k)
 	}
 
 	for p, k := range t.udp {
-		fmt.Printf("udp %s:\t\t%+v\n", p, k)
+		fmt.Printf("udp %d:\t\t%+v\n", p, k)
 	}
 
 	for name, c := range t.cmds {
 		fmt.Printf("\ncmd:\t\t%s\n", name)
-		if c.status != "" {
+		if c.status != "done" {
 			fmt.Printf("status:\t\t%s\n", c.status)
 			fmt.Printf("start time:\t%s\n",
 				c.start.Format("2006-01-02 15:04:05"))

@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"math/rand"
 	"os"
@@ -11,6 +12,8 @@ import (
 
 	fp "path/filepath"
 	str "strings"
+
+	"sectest/nmap"
 )
 
 type targetT struct {
@@ -24,13 +27,14 @@ type targetT struct {
 
 // status: "ok" or "error"
 type cmdT struct {
-	name    string
-	bin     string
-	args    []string
-	out     string
-	status  string
-	start   time.Time
-	runTime time.Duration
+	name     string
+	bin      string
+	args     []string
+	out      string
+	status   string
+	start    time.Time
+	runTime  time.Duration
+	nmapScan nmap.HostT
 }
 
 type portT struct {
@@ -83,9 +87,9 @@ func (t targetT) makeNmapCmd(name, argsS string) cmdT {
 		argsS += " --script-timeout 3 --max-retries 2"
 	}
 
-	argsS += " -T4 -g53 -oX " + fp.Join(t.ip, "nmap", name+".xml ")
-	argsS += "-oG " + fp.Join(t.ip, "nmap", name+".grep ")
-	argsS += t.ip
+	argsS += " -T4 -g53 -oX " + fp.Join(t.ip, "nmap", name+".xml")
+	argsS += " -oG " + fp.Join(t.ip, "nmap", name+".grep")
+	argsS += " " + t.ip
 
 	c.args = str.Split(argsS, " ")
 
@@ -105,18 +109,32 @@ func (t targetT) makeNmapCmd(name, argsS string) cmdT {
 }
 
 func (t targetT) nmapRun(c cmdT) {
-	runCmd(&c)
+	outFile := fp.Join(t.ip, c.name)
 
-	flags := os.O_CREATE | os.O_TRUNC | os.O_WRONLY
-	fd, err := os.OpenFile(fp.Join(t.ip, c.name), flags, 0640)
+	// execute nmap only if scan is not already completed
+	_, err := os.Stat(outFile)
+	if errors.Is(err, os.ErrNotExist) {
+		runCmd(&c)
+
+		flags := os.O_CREATE | os.O_TRUNC | os.O_WRONLY
+		fd, err := os.OpenFile(outFile, flags, 0640)
+		errExit(err)
+		fmt.Fprintf(fd, c.out)
+		fd.Close()
+	}
+
+	nmapScan, err := nmap.ReadScan(fp.Join(t.ip, "nmap", c.name+".xml"))
+	c.nmapScan = nmapScan.Hosts[0]
 	errExit(err)
-	fmt.Fprintf(fd, c.out)
-	fd.Close()
 
 	MU.Lock()
 	t.cmds[c.name] = c
-	fmt.Printf("%s done in %s; status: %s\n",
-		c.name, c.runTime.Round(time.Second), c.status)
+	if c.status == "" {
+		fmt.Printf("%s already done; skipping.\n", c.name)
+	} else {
+		fmt.Printf("%s done in %s; status: %s\n",
+			c.name, c.runTime.Round(time.Second), c.status)
+	}
 	MU.Unlock()
 
 	t.wg.Done()
@@ -134,7 +152,6 @@ func runCmd(c *cmdT) {
 	}
 
 	c.out = string(out)
-
 	c.runTime = time.Since(c.start)
 }
 
@@ -151,10 +168,16 @@ func (t targetT) printInfo() {
 
 	for name, c := range t.cmds {
 		fmt.Printf("\ncmd:\t\t%s\n", name)
-		fmt.Printf("status:\t\t%s\n", c.status)
-		fmt.Printf("start time:\t%s\n",
-			c.start.Format("2006-01-02 15:04:05"))
-		fmt.Printf("runtime:\t%s\n", c.runTime.Round(time.Second))
+		if c.status != "" {
+			fmt.Printf("status:\t\t%s\n", c.status)
+			fmt.Printf("start time:\t%s\n",
+				c.start.Format("2006-01-02 15:04:05"))
+			fmt.Printf("runtime:\t%s\n",
+				c.runTime.Round(time.Second))
+		}
+		if str.Contains(c.name, "_fast") {
+			nmap.PrHostInfo(c.nmapScan)
+		}
 	}
 }
 

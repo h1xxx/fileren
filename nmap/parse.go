@@ -14,32 +14,30 @@ import (
 	"unicode/utf8"
 )
 
-var IN = "test.xml"
-
-// nmapScanT is contains all the data for a single nmap scan.
-type nmapScanT struct {
+// NmapScanT is contains all the data for a single nmap scan.
+type NmapScanT struct {
 	Scanner      string      `xml:"scanner,attr"`
 	Args         string      `xml:"args,attr"`
-	Start        timeT       `xml:"start,attr"`
+	Start        TimeT       `xml:"start,attr"`
 	StartStr     string      `xml:"startstr,attr"`
 	Ver          string      `xml:"version,attr"`
 	ProfileName  string      `xml:"profile_name,attr"`
 	XMLOutputVer string      `xml:"xmloutputversion,attr"`
-	ScanInfo     scanInfoT   `xml:"scaninfo"`
-	Verbose      verboseT    `xml:"verbose"`
-	Debugging    debugT      `xml:"debugging"`
-	TaskBegin    []taskT     `xml:"taskbegin"`
-	TaskProgress []progressT `xml:"taskprogress"`
-	TaskEnd      []taskT     `xml:"taskend"`
-	PreScripts   []scriptT   `xml:"prescript>script"`
-	PostScripts  []scriptT   `xml:"postscript>script"`
-	Hosts        []hostT     `xml:"host"`
-	Targets      []targetT   `xml:"target"`
-	RunStats     runStatsT   `xml:"runstats"`
+	ScanInfo     ScanInfoT   `xml:"scaninfo"`
+	Verbose      VerboseT    `xml:"verbose"`
+	Debugging    DebugT      `xml:"debugging"`
+	TaskBegin    []TaskT     `xml:"taskbegin"`
+	TaskProgress []ProgressT `xml:"taskprogress"`
+	TaskEnd      []TaskT     `xml:"taskend"`
+	PreScripts   []ScriptT   `xml:"prescript>script"`
+	PostScripts  []ScriptT   `xml:"postscript>script"`
+	Hosts        []HostT     `xml:"host"`
+	Targets      []TargetT   `xml:"target"`
+	RunStats     RunStatsT   `xml:"runstats"`
 }
 
-// scanInfoT contains informational regarding how the scan was run.
-type scanInfoT struct {
+// ScanInfoT contains informational regarding how the scan was run.
+type ScanInfoT struct {
 	Type        string `xml:"type,attr"`
 	Protocol    string `xml:"protocol,attr"`
 	NumServices int    `xml:"numservices,attr"`
@@ -48,125 +46,125 @@ type scanInfoT struct {
 }
 
 // Verbose contains the verbosity level for the Nmap scan.
-type verboseT struct {
+type VerboseT struct {
 	Level int `xml:"level,attr"`
 }
 
-// debugT contains the debugging level for the Nmap scan.
-type debugT struct {
+// DebugT contains the debugging level for the Nmap scan.
+type DebugT struct {
 	Level int `xml:"level,attr"`
 }
 
-// taskT contains information about started and stopped Nmap tasks.
-type taskT struct {
+// TaskT contains information about started and stopped Nmap tasks.
+type TaskT struct {
 	Task      string `xml:"task,attr"`
-	Time      timeT  `xml:"time,attr"`
+	Time      TimeT  `xml:"time,attr"`
 	ExtraInfo string `xml:"extrainfo,attr"`
 }
 
-// progressT contains information about the progression of a Task.
-type progressT struct {
+// ProgressT contains information about the progression of a Task.
+type ProgressT struct {
 	Task      string  `xml:"task,attr"`
-	Time      timeT   `xml:"time,attr"`
+	Time      TimeT   `xml:"time,attr"`
 	Percent   float32 `xml:"percent,attr"`
 	Remaining int     `xml:"remaining,attr"`
-	Etc       timeT   `xml:"etc,attr"`
+	Etc       TimeT   `xml:"etc,attr"`
 }
 
-// targetT is found in the Nmap xml spec. I have no idea what it actually is.
-type targetT struct {
+// TargetT is found in the Nmap xml spec. I have no idea what it actually is.
+type TargetT struct {
 	Specification string `xml:"specification,attr"`
 	Status        string `xml:"status,attr"`
 	Reason        string `xml:"reason,attr"`
 }
 
-// hostT contains all information about a single host.
-type hostT struct {
-	StartTime     timeT         `xml:"starttime,attr"`
-	EndTime       timeT         `xml:"endtime,attr"`
+// HostT contains all information about a single host.
+type HostT struct {
+	StartTime     TimeT         `xml:"starttime,attr"`
+	EndTime       TimeT         `xml:"endtime,attr"`
 	TimedOut      bool          `xml:"timedout,attr"`
 	Comment       string        `xml:"comment,attr"`
-	Status        statusT       `xml:"status"`
-	Addresses     []addressT    `xml:"address"`
-	Hostnames     []hostnameT   `xml:"hostnames>hostname"`
-	Smurfs        []smurfT      `xml:"smurf"`
-	Ports         []portT       `xml:"ports>port"`
-	ExtraPorts    []extraPortsT `xml:"ports>extraports"`
-	Os            osT           `xml:"os"`
-	Distance      distanceT     `xml:"distance"`
-	Uptime        upTimeT       `xml:"uptime"`
-	TcpSequence   tcpSeqT       `xml:"tcpsequence"`
-	IpIdSequence  seqT          `xml:"ipidsequence"`
-	TcpTsSequence seqT          `xml:"tcptssequence"`
-	HostScripts   []scriptT     `xml:"hostscript>script"`
-	Trace         traceT        `xml:"trace"`
-	Times         timesT        `xml:"times"`
+	Status        StatusT       `xml:"status"`
+	Addresses     []AddressT    `xml:"address"`
+	Hostnames     []HostnameT   `xml:"hostnames>hostname"`
+	Smurfs        []SmurfT      `xml:"smurf"`
+	Ports         []PortT       `xml:"ports>port"`
+	ExtraPorts    []ExtraPortsT `xml:"ports>extraports"`
+	Os            OsT           `xml:"os"`
+	Distance      DistanceT     `xml:"distance"`
+	Uptime        UpTimeT       `xml:"uptime"`
+	TcpSequence   TcpSeqT       `xml:"tcpsequence"`
+	IpIdSequence  SeqT          `xml:"ipidsequence"`
+	TcpTsSequence SeqT          `xml:"tcptssequence"`
+	HostScripts   []ScriptT     `xml:"hostscript>script"`
+	Trace         TraceT        `xml:"trace"`
+	Times         TimesT        `xml:"times"`
 }
 
-// statusT is the host's status. Up, down, etc.
-type statusT struct {
+// StatusT is the host's status. Up, down, etc.
+type StatusT struct {
 	State     string  `xml:"state,attr"`
 	Reason    string  `xml:"reason,attr"`
 	ReasonTTL float32 `xml:"reason_ttl,attr"`
 }
 
-// addressT contains a IPv4 or IPv6 address for a Host.
-type addressT struct {
+// AddressT contains a IPv4 or IPv6 address for a Host.
+type AddressT struct {
 	Addr     string `xml:"addr,attr"`
 	AddrType string `xml:"addrtype,attr"`
 	Vendor   string `xml:"vendor,attr"`
 }
 
-// hostnameT is a single name for a Host.
-type hostnameT struct {
+// HostnameT is a single name for a Host.
+type HostnameT struct {
 	Name string `xml:"name,attr"`
 	Type string `xml:"type,attr"`
 }
 
-// smurfT contains repsonses from a smurf attack. I think.
-type smurfT struct {
+// SmurfT contains repsonses from a smurf attack. I think.
+type SmurfT struct {
 	Responses string `xml:"responses,attr"`
 }
 
-// extraPortsT contains the information about the closed|filtered ports.
-type extraPortsT struct {
+// ExtraPortsT contains the information about the closed|filtered ports.
+type ExtraPortsT struct {
 	State   string    `xml:"state,attr"`
 	Count   int       `xml:"count,attr"`
-	Reasons []reasonT `xml:"extrareasons"`
+	Reasons []ReasonT `xml:"extrareasons"`
 }
-type reasonT struct {
+type ReasonT struct {
 	Reason string `xml:"reason,attr"`
 	Count  int    `xml:"count,attr"`
 }
 
-// portT contains all the information about a scanned port.
-type portT struct {
+// PortT contains all the information about a scanned port.
+type PortT struct {
 	Protocol string    `xml:"protocol,attr"`
 	PortId   int       `xml:"portid,attr"`
-	State    stateT    `xml:"state"`
-	Owner    ownerT    `xml:"owner"`
-	Service  serviceT  `xml:"service"`
-	Scripts  []scriptT `xml:"script"`
+	State    StateT    `xml:"state"`
+	Owner    OwnerT    `xml:"owner"`
+	Service  ServiceT  `xml:"service"`
+	Scripts  []ScriptT `xml:"script"`
 }
 
-// stateT contains information about a given ports
+// StateT contains information about a given ports
 // status. State will be open, closed, etc.
-type stateT struct {
+type StateT struct {
 	State     string  `xml:"state,attr"`
 	Reason    string  `xml:"reason,attr"`
 	ReasonTTL float32 `xml:"reason_ttl,attr"`
 	ReasonIP  string  `xml:"reason_ip,attr"`
 }
 
-// ownerT contains the name of Port.Owner.
-type ownerT struct {
+// OwnerT contains the name of Port.Owner.
+type OwnerT struct {
 	Name string `xml:"name,attr"`
 }
 
-// serviceT contains detailed information about a Port's service details.
+// ServiceT contains detailed information about a Port's service details.
 // CPE (Common Platform Enumeration) is a standardized way to name software
 // applications, operating systems, and hardware platforms.
-type serviceT struct {
+type ServiceT struct {
 	Name       string   `xml:"name,attr"`
 	Conf       int      `xml:"conf,attr"`
 	Method     string   `xml:"method,attr"`
@@ -185,43 +183,43 @@ type serviceT struct {
 	CPEs       []string `xml:"cpe"`
 }
 
-// scriptT contains information from Nmap Scripting Engine.
-type scriptT struct {
+// ScriptT contains information from Nmap Scripting Engine.
+type ScriptT struct {
 	Id       string   `xml:"id,attr"`
 	Output   string   `xml:"output,attr"`
-	Tables   []tableT `xml:"table"`
-	Elements []elemT  `xml:"elem"`
+	Tables   []TableT `xml:"table"`
+	Elements []ElemT  `xml:"elem"`
 }
 
-// tableT contains the output of the script in a more parse-able form.
-type tableT struct {
+// TableT contains the output of the script in a more parse-able form.
+type TableT struct {
 	Key      string   `xml:"key,attr"`
-	Elements []elemT  `xml:"elem"`
-	Table    []tableT `xml:"table"`
+	Elements []ElemT  `xml:"elem"`
+	Table    []TableT `xml:"table"`
 }
 
-// elemT contains the output of the script, with detailed information
-type elemT struct {
+// ElemT contains the output of the script, with detailed information
+type ElemT struct {
 	Key   string `xml:"key,attr"`
 	Value string `xml:",chardata"`
 }
 
-// osT contains the fingerprinted operating system for a Host.
-type osT struct {
-	PortsUsed      []portUsedT      `xml:"portused"`
-	OsMatches      []osMatchT       `xml:"osmatch"`
-	OsFingerprints []osFingerprintT `xml:"osfingerprint"`
+// OsT contains the fingerprinted operating system for a Host.
+type OsT struct {
+	PortsUsed      []PortUsedT      `xml:"portused"`
+	OsMatches      []OsMatchT       `xml:"osmatch"`
+	OsFingerprints []OsFingerprintT `xml:"osfingerprint"`
 }
 
 // PortsUsed is the port used to fingerprint a Os.
-type portUsedT struct {
+type PortUsedT struct {
 	State  string `xml:"state,attr"`
 	Proto  string `xml:"proto,attr"`
 	PortId int    `xml:"portid,attr"`
 }
 
-// osClassT contains vendor information for an Os.
-type osClassT struct {
+// OsClassT contains vendor information for an Os.
+type OsClassT struct {
 	Vendor   string   `xml:"vendor,attr"`
 	OsGen    string   `xml"osgen,attr"`
 	Type     string   `xml:"type,attr"`
@@ -230,76 +228,76 @@ type osClassT struct {
 	CPEs     []string `xml:"cpe"`
 }
 
-// osMatchT contains detailed information regarding a Os fingerprint.
-type osMatchT struct {
+// OsMatchT contains detailed information regarding a Os fingerprint.
+type OsMatchT struct {
 	Name      string     `xml:"name,attr"`
 	Accuracy  string     `xml:"accuracy,attr"`
 	Line      string     `xml:"line,attr"`
-	OsClasses []osClassT `xml:"osclass"`
+	OsClasses []OsClassT `xml:"osclass"`
 }
 
-// osFingerprintT is the actual fingerprint string.
-type osFingerprintT struct {
+// OsFingerprintT is the actual fingerprint string.
+type OsFingerprintT struct {
 	Fingerprint string `xml:"fingerprint,attr"`
 }
 
-// distanceT is the amount of hops to a particular host.
-type distanceT struct {
+// DistanceT is the amount of hops to a particular host.
+type DistanceT struct {
 	Value int `xml:"value,attr"`
 }
 
-// upTimeT is the amount of time the host has been up.
-type upTimeT struct {
+// UpTimeT is the amount of time the host has been up.
+type UpTimeT struct {
 	Seconds  int    `xml:"seconds,attr"`
 	Lastboot string `xml:"lastboot,attr"`
 }
 
-// tcpSeqT contains information regarding the detected tcp sequence.
-type tcpSeqT struct {
+// TcpSeqT contains information regarding the detected tcp sequence.
+type TcpSeqT struct {
 	Index      int    `xml:"index,attr"`
 	Difficulty string `xml:"difficulty,attr"`
 	Values     string `xml:"vaules,attr"`
 }
 
 // Sequence contains information regarding the detected X sequence.
-type seqT struct {
+type SeqT struct {
 	Class  string `xml:"class,attr"`
 	Values string `xml:"values,attr"`
 }
 
-// traceT contains the hops to a Host.
-type traceT struct {
+// TraceT contains the hops to a Host.
+type TraceT struct {
 	Proto string `xml:"proto,attr"`
 	Port  int    `xml:"port,attr"`
-	Hops  []hopT `xml:"hop"`
+	Hops  []HopT `xml:"hop"`
 }
 
-// hopT is a ip hop to a Host.
-type hopT struct {
+// HopT is a ip hop to a Host.
+type HopT struct {
 	TTL    float32 `xml:"ttl,attr"`
 	RTT    float32 `xml:"rtt,attr"`
 	IPAddr string  `xml:"ipaddr,attr"`
 	Host   string  `xml:"host,attr"`
 }
 
-// timesT contains time statistics for an Nmap scan.
-type timesT struct {
+// TimesT contains time statistics for an Nmap scan.
+type TimesT struct {
 	SRTT string `xml:"srtt,attr"`
 	RTT  string `xml:"rttvar,attr"`
 	To   string `xml:"to,attr"`
 }
 
-// runStatsT contains statistics for a
+// RunStatsT contains statistics for a
 // finished Nmap scan.
-type runStatsT struct {
-	Finished finishedT `xml:"finished"`
-	Hosts    hostsT    `xml:"hosts"`
+type RunStatsT struct {
+	Finished FinishedT `xml:"finished"`
+	Hosts    HostsT    `xml:"hosts"`
 }
 
-// finishedT contains detailed statistics regarding
+// FinishedT contains detailed statistics regarding
 // a finished Nmap scan.
-type finishedT struct {
-	Time     timeT   `xml:"time,attr"`
+type FinishedT struct {
+	Time     TimeT   `xml:"time,attr"`
 	TimeStr  string  `xml:"timestr,attr"`
 	Elapsed  float32 `xml:"elapsed,attr"`
 	Summary  string  `xml:"summary,attr"`
@@ -307,97 +305,97 @@ type finishedT struct {
 	ErrorMsg string  `xml:"errormsg,attr"`
 }
 
-// hostsT contains the amount of up and down hosts and the total count.
-type hostsT struct {
+// HostsT contains the amount of up and down hosts and the total count.
+type HostsT struct {
 	Up    int `xml:"up,attr"`
 	Down  int `xml:"down,attr"`
 	Total int `xml:"total,attr"`
 }
 
-// timeT represents time as a UNIX timestamp in seconds.
-type timeT time.Time
+// TimeT represents time as a UNIX timestamp in seconds.
+type TimeT time.Time
 
 // str2time converts a string containing a UNIX timestamp to to a time.Time.
-func (t *timeT) str2time(s string) error {
+func (t *TimeT) str2time(s string) error {
 	ts, err := strconv.ParseInt(s, 10, 64)
 	if err != nil {
 		return err
 	}
-	*t = timeT(time.Unix(ts, 0))
+	*t = TimeT(time.Unix(ts, 0))
 	return nil
 }
 
 // time2str formats the time.Time value as a UNIX timestamp string.
 // these might also need to be changed to pointers. See str2time and UnmarshalXMLAttr.
-func (t timeT) time2str() string {
+func (t TimeT) time2str() string {
 	return strconv.FormatInt(time.Time(t).Unix(), 10)
 }
 
-func (t timeT) MarshalXMLAttr(name xml.Name) (xml.Attr, error) {
+func (t TimeT) MarshalXMLAttr(name xml.Name) (xml.Attr, error) {
 	return xml.Attr{Name: name, Value: t.time2str()}, nil
 }
 
-func (t *timeT) UnmarshalXMLAttr(attr xml.Attr) (err error) {
+func (t *TimeT) UnmarshalXMLAttr(attr xml.Attr) (err error) {
 	return t.str2time(attr.Value)
 }
 
-type skipT struct {
+type SkipT struct {
 	id  string
 	key string
 }
 
-func main() {
-	fName := IN
-	f, err := os.Open(fName)
-	errExit(err, "can't open file")
-	defer f.Close()
+func ReadScan(file string) (NmapScanT, error) {
+	fh, err := os.Open(file)
+	if err != nil {
+		return NmapScanT{}, err
+	}
+	defer fh.Close()
 
-	bytes, _ := ioutil.ReadAll(f)
-	var nmapScan nmapScanT
+	bytes, _ := ioutil.ReadAll(fh)
+	var nmapScan NmapScanT
 	xml.Unmarshal(bytes, &nmapScan)
 
+	/* for debugging xml schema
 	outXML, _ := xml.MarshalIndent(nmapScan, "", " ")
 	_ = ioutil.WriteFile("goparsed.xml", outXML, 0644)
+	*/
 
-	for _, host := range nmapScan.Hosts {
-		prHostInfo(host)
-	}
-
+	return nmapScan, nil
 }
 
-func prHostInfo(h hostT) {
+func PrHostInfo(h HostT) {
 	prHeader(h)
 	prPortInfo(h)
 	prScripts(h.HostScripts)
 	fmt.Println()
 }
 
-func prHeader(h hostT) {
-	fmt.Println()
+func prHeader(h HostT) {
+	fmt.Println("+ host")
 	for _, a := range h.Addresses {
-		fmt.Printf("+ %s\n", a.Addr)
+		fmt.Printf("%s\t", a.Addr)
 	}
 
 	for _, name := range h.Hostnames {
-		fmt.Printf("+ %s\n", name.Name)
+		fmt.Printf("%s\t", name.Name)
 	}
 	fmt.Println()
 }
 
-func prPortInfo(h hostT) {
+func prPortInfo(h HostT) {
 	for _, p := range h.Ports {
-		proto := string(p.Protocol[0])
-		fmt.Printf("%d/%s\t", p.PortId, proto)
+		fmt.Printf("\n%d/%s\n", p.PortId, p.Protocol)
 		prService(p.Service)
 		prScripts(p.Scripts)
 	}
 }
 
-func prService(s serviceT) {
-	fmt.Printf("%-13s %s %s %s\n", s.Name, s.Product, s.Ver, s.ExtraInfo)
+func prService(s ServiceT) {
+	fmt.Printf("%-13s %-13s ver: %-13s info: %s\n",
+		s.Name, s.Product, s.Ver, s.ExtraInfo)
 }
 
-func prScripts(scripts []scriptT) {
+func prScripts(scripts []ScriptT) {
 	for _, s := range scripts {
 		var lines []string
 		for _, t := range s.Tables {
@@ -417,21 +415,18 @@ func prScripts(scripts []scriptT) {
 
 		prScriptId(s.Id)
 
-		var spaces string
 		for _, line := range lines {
-			fmt.Printf("%s%s\n", spaces, line)
-			spaces = "                      "
+			fmt.Printf("%s\n", line)
 		}
 	}
 }
 
 func prScriptId(scriptId string) {
 	scriptId = strings.TrimPrefix(scriptId, "http-")
-
-	fmt.Printf("\t%-13s ", scriptId)
+	fmt.Printf("%-13s ", scriptId)
 }
 
-func parseScript(scriptId, tableKey string, elems []elemT) []string {
+func parseScript(scriptId, tableKey string, elems []ElemT) []string {
 	var lines []string
 	tableKey = parseKeyVal(scriptId, tableKey, "")
 	if tableKey != "" {
@@ -492,6 +487,14 @@ func parseKeyVal(scriptId, key, val string) string {
 		key = "province"
 	case key == "Allowed Methods":
 		key = "methods"
+	case key == "DNSVersionBindReqTCP" || key == "DNSVersionBindReq":
+		key = "'bind req'"
+		val = strings.Replace(val, " ", "", -1)
+		val = strings.Replace(val, "\n", " ", -1)
+	case key == "NBTStat":
+		key = "nbtstat"
+		val = strings.Replace(val, " ", "", -1)
+		val = strings.Replace(val, "\n", " ", -1)
 	}
 
 	// todo: make a regex here (\\x.*\\x.*\\x...)
@@ -551,14 +554,14 @@ func strIsPrintable(str string) bool {
 
 func skipKey(id, key string) bool {
 	// todo: make a map here
-	skipIdKeys := []skipT{
-		skipT{id: "ssl-cert", key: "pem"},
-		skipT{id: "ssl-cert", key: "pubkey"},
-		skipT{id: "ssl-cert", key: "sig_algo"},
-		skipT{id: "ssl-cert", key: "md5"},
-		skipT{id: "ssl-cert", key: "sha1"},
-		skipT{id: "ssl-cert", key: "issuer"},
-		skipT{id: "ssl-cert", key: "extensions"},
+	skipIdKeys := []SkipT{
+		SkipT{id: "ssl-cert", key: "pem"},
+		SkipT{id: "ssl-cert", key: "pubkey"},
+		SkipT{id: "ssl-cert", key: "sig_algo"},
+		SkipT{id: "ssl-cert", key: "md5"},
+		SkipT{id: "ssl-cert", key: "sha1"},
+		SkipT{id: "ssl-cert", key: "issuer"},
+		SkipT{id: "ssl-cert", key: "extensions"},
 	}
 
 	for _, skip := range skipIdKeys {

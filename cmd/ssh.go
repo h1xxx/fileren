@@ -44,7 +44,7 @@ func (t *targetT) sshBruteRootFast(host string, port int, wg *sync.WaitGroup) {
 	c.name = "ssh_brute_root_fast"
 	c.bin = "hydra"
 
-	argsS := fmt.Sprintf("-l root -P %s -e nsr -u ssh://%s:%d -t 16",
+	argsS := fmt.Sprintf("-l root -P %s -e nsr -I -u ssh://%s:%d -t 16",
 		"./data/ssh_rootpass_fast", t.host, port)
 
 	c.args = str.Split(argsS, " ")
@@ -58,7 +58,7 @@ func (t *targetT) sshBruteUserFast(host string, port int, wg *sync.WaitGroup) {
 	c.name = "ssh_brute_user_fast"
 	c.bin = "hydra"
 
-	argsS := fmt.Sprintf("-L %s -P %s -e nsr -u ssh://%s:%d -t 16",
+	argsS := fmt.Sprintf("-L %s -P %s -e nsr -I -u ssh://%s:%d -t 16",
 		"./data/ssh_users", "./data/ssh_userpass_fast", t.host, port)
 
 	c.args = str.Split(argsS, " ")
@@ -72,7 +72,7 @@ func (t *targetT) sshBruteRootFull(host string, port int, wg *sync.WaitGroup) {
 	c.name = "ssh_brute_root_full"
 	c.bin = "hydra"
 
-	argsS := fmt.Sprintf("-l root -P %s -u ssh://%s:%d -t 16",
+	argsS := fmt.Sprintf("-l root -P %s -I -u ssh://%s:%d -t 16",
 		"./data/ssh_rootpass_full", t.host, port)
 
 	c.args = str.Split(argsS, " ")
@@ -86,7 +86,7 @@ func (t *targetT) sshBruteUserFull(host string, port int, wg *sync.WaitGroup) {
 	c.name = "ssh_brute_user_full"
 	c.bin = "hydra"
 
-	argsS := fmt.Sprintf("-L %s -P %s -u ssh://%s:%d -t 16",
+	argsS := fmt.Sprintf("-L %s -P %s -I -u ssh://%s:%d -t 16",
 		"./data/ssh_users", "./data/ssh_userpass_full", t.host, port)
 
 	c.args = str.Split(argsS, " ")

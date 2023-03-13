@@ -18,6 +18,10 @@ func runCmd(host string, c *cmdT) {
 	fd, err := os.OpenFile(fp.Join(host, c.name), flags, 0640)
 	errExit(err)
 
+	fmt.Fprintf(fd, "sectest cmd: %s %s\n", c.bin, str.Join(c.args, " "))
+	sep := "---------------------------------------"
+	fmt.Fprintf(fd, "%s%s-\n", sep, sep)
+
 	cmd := exec.Command(c.bin, c.args...)
 	cmd.Stdout = fd
 	cmd.Stderr = fd
@@ -32,6 +36,11 @@ func runCmd(host string, c *cmdT) {
 	}
 
 	c.runTime = time.Since(c.start)
+
+	fmt.Fprintf(fd, "%s%s-\n", sep, sep)
+	fmt.Fprintf(fd, "sectest cmd status: %s\n", c.status)
+	fmt.Fprintf(fd, "sectest cmd time: %s\n", c.runTime.Round(time.Second))
+
 	fd.Close()
 }
 

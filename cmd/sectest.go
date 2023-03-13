@@ -5,7 +5,6 @@ package main
 // vulners
 
 import (
-	"fmt"
 	"os"
 	"sync"
 	"time"
@@ -58,7 +57,6 @@ func main() {
 
 	os.MkdirAll(fp.Join(t.host, "nmap"), 0750)
 
-	fmt.Println("starting all nmap scans...")
 	t.wg.Add(5)
 
 	c := t.makeNmapCmd("nmap_tcp_fast_1", "-p1-10000 -sSVC")
@@ -75,6 +73,9 @@ func main() {
 
 	c = t.makeNmapCmd("nmap_udp_full", "--top-ports 1000 -sUV")
 	go t.nmapRun(c)
+
+	// wait a bit before other cmds are executed to print nmap info at once
+	time.Sleep(time.Second)
 
 	for {
 		for p, pi := range t.tcp {

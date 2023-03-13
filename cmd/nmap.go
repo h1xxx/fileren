@@ -1,10 +1,6 @@
 package main
 
 import (
-	"errors"
-	"os"
-	"time"
-
 	fp "path/filepath"
 	"sectest/nmap"
 	str "strings"
@@ -41,23 +37,11 @@ func (t *targetT) makeNmapCmd(name, argsS string) cmdT {
 }
 
 func (t *targetT) nmapRun(c cmdT) {
-	// execute nmap only if scan is not already completed
-	_, err := os.Stat(fp.Join(t.host, c.name))
-	if errors.Is(err, os.ErrNotExist) {
-		runCmd(t.host, &c)
-	}
+	runCmd(t.host, &c)
 
 	nmapScan, err := nmap.ReadScan(fp.Join(t.host, "nmap", c.name+".xml"))
 	c.nmapScan = nmapScan.Hosts[0]
 	errExit(err)
-
-	if c.status == "" {
-		print("%s already done; skipping.\n", c.name)
-		c.status = "done"
-	} else {
-		msg := "%s done in %s; status: %s\n"
-		print(msg, c.name, c.runTime.Round(time.Second), c.status)
-	}
 
 	MU.Lock()
 	t.cmds[c.name] = c

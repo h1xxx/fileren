@@ -17,23 +17,13 @@ func (t *targetT) sshBrute(port int) {
 	sshWg := &sync.WaitGroup{}
 
 	sshWg.Add(2)
-
-	print("brute forcing ssh root (fast)...\n")
 	go t.sshBruteRootFast(t.host, port, sshWg)
-
-	print("brute forcing ssh users (fast)...\n")
 	go t.sshBruteUserFast(t.host, port, sshWg)
-
 	sshWg.Wait()
 
 	sshWg.Add(2)
-
-	print("brute forcing ssh root (full)...\n")
 	go t.sshBruteRootFull(t.host, port, sshWg)
-
-	print("brute forcing ssh users (full)...\n")
 	go t.sshBruteUserFull(t.host, port, sshWg)
-
 	sshWg.Wait()
 
 	t.wg.Done()

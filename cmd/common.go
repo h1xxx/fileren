@@ -14,8 +14,17 @@ import (
 )
 
 func runCmd(host string, c *cmdT) {
+	outFile := fp.Join(host, c.name)
+	if cmdIsDone(outFile) {
+		print("%s already done; skipping.\n", c.name)
+		c.status = "done"
+		return
+	}
+
+	print("starting %s...\n", c.name)
+
 	flags := os.O_CREATE | os.O_TRUNC | os.O_WRONLY
-	fd, err := os.OpenFile(fp.Join(host, c.name), flags, 0640)
+	fd, err := os.OpenFile(outFile, flags, 0640)
 	errExit(err)
 
 	fmt.Fprintf(fd, "sectest cmd: %s %s\n", c.bin, str.Join(c.args, " "))
@@ -41,7 +50,19 @@ func runCmd(host string, c *cmdT) {
 	fmt.Fprintf(fd, "sectest cmd status: %s\n", c.status)
 	fmt.Fprintf(fd, "sectest cmd time: %s\n", c.runTime.Round(time.Second))
 
+	msg := "%s done in %s; status: %s.\n"
+	print(msg, c.name, c.runTime.Round(time.Second), c.status)
+
 	fd.Close()
+}
+
+func cmdIsDone(outFile string) bool {
+	cmd := exec.Command("grep", "-q", "sectest cmd status: ok", outFile)
+	err := cmd.Run()
+	if err != nil {
+		return false
+	}
+	return true
 }
 
 func (t *targetT) printInfo() {

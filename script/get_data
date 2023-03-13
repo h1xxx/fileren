@@ -10,7 +10,7 @@ cd "$(dirname "$0")"
 
 # usernames
 grep -v -e '^pi$' -e '^root$' \
-  "${LIST_DIR}/Usernames/top-usernames-shortlist.txt" > ../data/ssh_user_fast
+  "${LIST_DIR}/Usernames/top-usernames-shortlist.txt" > ../data/ssh_users
 
 # passwords for fast root test
 head -n 3000 "${LIST_DIR}/Passwords/xato-net-10-million-passwords-10000.txt" \

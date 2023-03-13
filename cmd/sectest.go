@@ -32,7 +32,6 @@ type cmdT struct {
 	name     string
 	bin      string
 	args     []string
-	out      string
 	status   string
 	start    time.Time
 	runTime  time.Duration
@@ -87,7 +86,7 @@ func main() {
 			case "ssh":
 				t.testSsh(p, pi)
 			default:
-				msg := "ignoring %s on tcp port %d\n"
+				msg := "ignoring %s on tcp port %d.\n"
 				print(msg, pi.service, p)
 			}
 
@@ -102,7 +101,7 @@ func main() {
 
 			switch pi.service {
 			default:
-				msg := "ignoring %s on udp port %d\n"
+				msg := "ignoring %s on udp port %d.\n"
 				print(msg, pi.service, p)
 			}
 

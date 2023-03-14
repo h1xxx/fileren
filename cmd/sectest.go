@@ -6,6 +6,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"os"
 	"sync"
 	"time"
@@ -60,9 +61,12 @@ func init() {
 
 func main() {
 	flag.Parse()
+	if *args.host == "" {
+		errExit(fmt.Errorf("target host parameter missing (-h)"))
+	}
 
 	var t targetT
-	t.host = args.host
+	t.host = *args.host
 	t.tcp = make(map[int]portInfoT)
 	t.udp = make(map[int]portInfoT)
 	t.cmds = make(map[string]cmdT)

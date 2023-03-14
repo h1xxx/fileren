@@ -94,7 +94,7 @@ func (t *targetT) printInfo() {
 }
 
 func getRandomUA() string {
-	fd, err := os.Open("./data/http_user-agents")
+	fd, err := os.Open("./data/http_user-agent")
 	errExit(err)
 	defer fd.Close()
 

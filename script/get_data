@@ -10,25 +10,15 @@ cd "$(dirname "$0")"
 
 # usernames
 grep -v -e '^pi$' -e '^root$' \
-  "${LIST_DIR}/Usernames/top-usernames-shortlist.txt" > ../data/ssh_users
+  "${LIST_DIR}/Usernames/top-usernames-shortlist.txt" > ../data/ssh_user
 
-# passwords for fast root test
-head -n 3000 "${LIST_DIR}/Passwords/xato-net-10-million-passwords-10000.txt" \
-  > ../data/ssh_rootpass_fast
+# passwords for root test
+cp "${LIST_DIR}/Passwords/xato-net-10-million-passwords-100000.txt" \
+  ../data/ssh_root_pass
 
-# passwords for fast user test
-head -n 300  "${LIST_DIR}/Passwords/xato-net-10-million-passwords-1000.txt" \
-  > ../data/ssh_userpass_fast
-
-# passwords for full root test
-grep -vxFf ../data/ssh_rootpass_fast \
-  "${LIST_DIR}/Passwords/xato-net-10-million-passwords-100000.txt" \
-  > ../data/ssh_rootpass_full
-
-# passwords for full user test
-grep -vxFf ../data/ssh_userpass_fast \
-  "${LIST_DIR}/Passwords/xato-net-10-million-passwords-10000.txt" \
-  > ../data/ssh_userpass_full
+# passwords for user test
+cp "${LIST_DIR}/Passwords/xato-net-10-million-passwords-10000.txt" \
+  ../data/ssh_user_pass
 
 
 # http
@@ -36,7 +26,7 @@ grep -vxFf ../data/ssh_userpass_fast \
 
 # user-agents
 l=https://raw.githubusercontent.com/Kikobeats/top-user-agents/master/index.json
-curl -s ${l} | grep M | cut -d'"' -f2 > ../data/http_user-agents
+curl -s ${l} | grep M | cut -d'"' -f2 > ../data/http_user-agent
 
 # common www files - fast
 d=/usr/share/seclists/Discovery/Web-Content

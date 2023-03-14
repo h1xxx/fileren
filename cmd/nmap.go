@@ -15,7 +15,8 @@ func (t *targetT) makeNmapCmd(name, argsS string) cmdT {
 		argsS += " --script-timeout 3 --max-retries 2"
 	}
 
-	argsS += " -T4 -g53 -oX " + fp.Join(t.host, "nmap", name+".xml")
+	argsS += " -T4 -g53 --open"
+	argsS += " -oX " + fp.Join(t.host, "nmap", name+".xml")
 	argsS += " -oG " + fp.Join(t.host, "nmap", name+".grep")
 	argsS += " " + t.host
 

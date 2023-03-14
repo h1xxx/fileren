@@ -94,8 +94,7 @@ func (t *targetT) printInfo() {
 }
 
 func getRandomUA() string {
-	uaPath := "/usr/share/seclists/Fuzzing/User-Agents"
-	fd, err := os.Open(uaPath + "/operating-system-name/windows.txt")
+	fd, err := os.Open("./data/http_user-agents")
 	errExit(err)
 	defer fd.Close()
 

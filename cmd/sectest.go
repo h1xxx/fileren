@@ -48,7 +48,7 @@ var MU = &sync.Mutex{}
 
 func main() {
 	var t targetT
-	t.host = "scanme.nmap.org"
+	t.host = "45.33.32.156"
 	t.tcp = make(map[int]portInfoT)
 	t.udp = make(map[int]portInfoT)
 	t.cmds = make(map[string]cmdT)
@@ -75,7 +75,7 @@ func main() {
 	go t.nmapRun(c)
 
 	// wait a bit before other cmds are executed to print nmap info at once
-	time.Sleep(time.Second)
+	time.Sleep(100 * time.Millisecond)
 
 	for {
 		for p, pi := range t.tcp {
@@ -85,7 +85,11 @@ func main() {
 
 			switch pi.service {
 			case "ssh":
-				t.testSsh(p, pi)
+				t.wg.Add(1)
+				go t.testSsh(p, pi)
+			case "http":
+				t.wg.Add(1)
+				go t.testHttp(p, pi)
 			default:
 				msg := "ignoring %s on tcp port %d.\n"
 				print(msg, pi.service, p)

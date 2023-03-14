@@ -30,3 +30,63 @@ grep -vxFf ../data/ssh_userpass_fast \
   "${LIST_DIR}/Passwords/xato-net-10-million-passwords-10000.txt" \
   > ../data/ssh_userpass_full
 
+
+# http
+# ----
+
+# user-agents
+l=https://raw.githubusercontent.com/Kikobeats/top-user-agents/master/index.json
+curl -s ${l} | grep M | cut -d'"' -f2 > ../data/http_user-agents
+
+# common www files - fast
+d=/usr/share/seclists/Discovery/Web-Content
+cat ${d}/raft-small-files.txt \
+  ${d}/raft-small-directories.txt \
+  ${d}/api/api-endpoints.txt \
+  ${d}/URLs/*.txt \
+  | sed 's|^/||' \
+  | sed '/^\//d' \
+  | sed 's|/$||' \
+  | sed '/\/$/d' \
+  | sed '/ /d' \
+  | sed '/\?/d' \
+  | sed '/#/d' \
+  | sort -u \
+  > ../data/http_files_fast
+
+# common www files - full
+d=/usr/share/seclists/Discovery/Web-Content
+cat ${d}/raft-large-files.txt \
+  ${d}/raft-large-directories.txt \
+  ${d}/CMS/* \
+  ${d}/SVNDigger/all.txt \
+  ${d}/api/*.txt \
+  ${d}/{A,C,F,H,I,J,O,R,S,U,V,a,f,g,h,j,n,o,p,q,u,v}*.txt \
+  ${d}/Logins.fuzz.txt \
+  ${d}/LotusNotes.fuzz.txt \
+  ${d}/Passwords.fuzz.txt \
+  ${d}/PHP.fuzz.txt \
+  ${d}/coldfusion.txt \
+  ${d}/confluence-administration.txt \
+  ${d}/domino-dirs-coldfusion39.txt \
+  ${d}/domino-endpoints-coldfusion39.txt \
+  ${d}/reverse-proxy-inconsistencies.txt \
+  ${d}/ror.txt \
+  ${d}/sap.txt \
+  ${d}/swagger.txt \
+  ${d}/tomcat.txt \
+  ${d}/weblogic.txt \
+  ${d}/websphere.txt \
+  | sed 's|^/||' \
+  | sed '/^\//d' \
+  | sed 's|/$||' \
+  | sed '/\/$/d' \
+  | sed '/ /d' \
+  | sed '/\?/d' \
+  | sed '/#/d' \
+  | sed '/svn\/pristine/d' \
+  | grep -vxFf ../data/http_files_fast \
+  | sort -u \
+  > ../data/http_files_full
+
+echo done.

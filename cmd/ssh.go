@@ -9,11 +9,7 @@ import (
 
 func (t *targetT) testSsh(port int, portInfo portInfoT) {
 	print("testing %s on port %d...\n", portInfo.service, port)
-	t.wg.Add(1)
-	go t.sshBrute(port)
-}
 
-func (t *targetT) sshBrute(port int) {
 	sshWg := &sync.WaitGroup{}
 
 	sshWg.Add(2)

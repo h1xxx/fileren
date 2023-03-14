@@ -5,6 +5,7 @@ package main
 // vulners
 
 import (
+	"flag"
 	"os"
 	"sync"
 	"time"
@@ -44,11 +45,24 @@ type portInfoT struct {
 	ver     string
 }
 
+type argsT struct {
+	host    *string
+	domains *string
+}
+
 var MU = &sync.Mutex{}
+var args argsT
+
+func init() {
+	args.host = flag.String("h", "", "target host (ip or domain)")
+	args.domains = flag.String("d", "", "domains for web enumaration")
+}
 
 func main() {
+	flag.Parse()
+
 	var t targetT
-	t.host = "45.33.32.156"
+	t.host = args.host
 	t.tcp = make(map[int]portInfoT)
 	t.udp = make(map[int]portInfoT)
 	t.cmds = make(map[string]cmdT)

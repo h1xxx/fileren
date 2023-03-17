@@ -14,14 +14,15 @@ import (
 )
 
 func runCmd(host string, c *cmdT) {
-	outFile := fp.Join(host, c.name)
+	outFile := fp.Join(host, c.bin, c.name)
 	if cmdIsDone(outFile) {
 		print("%s already done; skipping.\n", c.name)
 		c.status = "done"
 		return
 	}
+	os.MkdirAll(fp.Join(host, c.bin), 0750)
 
-	print("starting %s...\n", c.name)
+	print("starting %s: %s...\n", c.bin, c.name)
 
 	flags := os.O_CREATE | os.O_TRUNC | os.O_WRONLY
 	fd, err := os.OpenFile(outFile, flags, 0640)
@@ -50,8 +51,8 @@ func runCmd(host string, c *cmdT) {
 	fmt.Fprintf(fd, "sectest cmd status: %s\n", c.status)
 	fmt.Fprintf(fd, "sectest cmd time: %s\n", c.runTime.Round(time.Second))
 
-	msg := "%s done in %s; status: %s.\n"
-	print(msg, c.name, c.runTime.Round(time.Second), c.status)
+	msg := "%s:%s done in %s, %s\n"
+	print(msg, c.bin, c.name, c.runTime.Round(time.Second), c.status)
 
 	fd.Close()
 }

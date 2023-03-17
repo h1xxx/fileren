@@ -55,7 +55,7 @@ var MU = &sync.Mutex{}
 var args argsT
 
 func init() {
-	args.host = flag.String("h", "", "target host (ip or domain)")
+	args.host = flag.String("t", "", "target host (ip or domain)")
 	args.domains = flag.String("d", "", "domains for web enumaration")
 }
 
@@ -77,19 +77,19 @@ func main() {
 
 	t.wg.Add(5)
 
-	c := t.makeNmapCmd("nmap_tcp_fast_1", "-p1-10000 -sSVC")
+	c := t.makeNmapCmd("tcp_fast_1", "-p1-10000 -sSVC")
 	go t.nmapRun(c)
 
-	c = t.makeNmapCmd("nmap_tcp_fast_2", "-p10001-65535 -sSVC")
+	c = t.makeNmapCmd("tcp_fast_2", "-p10001-65535 -sSVC")
 	go t.nmapRun(c)
 
-	c = t.makeNmapCmd("nmap_tcp_full", "-p- -sS -sV -O")
+	c = t.makeNmapCmd("tcp_full", "-p- -sS -sV -O")
 	go t.nmapRun(c)
 
-	c = t.makeNmapCmd("nmap_udp_fast", "--top-ports 50 -sUVC")
+	c = t.makeNmapCmd("udp_fast", "--top-ports 50 -sUVC")
 	go t.nmapRun(c)
 
-	c = t.makeNmapCmd("nmap_udp_full", "--top-ports 1000 -sUV")
+	c = t.makeNmapCmd("udp_full", "--top-ports 1000 -sUV")
 	go t.nmapRun(c)
 
 	// wait a bit before other cmds are executed to print nmap info at once

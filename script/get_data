@@ -2,7 +2,9 @@
 set -euo pipefail
 
 LIST_DIR=/usr/share/seclists
+
 cd "$(dirname "$0")"
+mkdir -p ../data
 
 
 # ssh brute force files
@@ -12,13 +14,37 @@ cd "$(dirname "$0")"
 grep -v -e '^pi$' -e '^root$' \
   "${LIST_DIR}/Usernames/top-usernames-shortlist.txt" > ../data/ssh_user
 
-# passwords for root test
-cp "${LIST_DIR}/Passwords/xato-net-10-million-passwords-100000.txt" \
-  ../data/ssh_root_pass
+# passwords for root test - part 1
+head -n 1000  "${LIST_DIR}/Passwords/xato-net-10-million-passwords-10000.txt" \
+  > ../data/ssh_root_pass_1
 
-# passwords for user test
-cp "${LIST_DIR}/Passwords/xato-net-10-million-passwords-10000.txt" \
-  ../data/ssh_user_pass
+# passwords for root test - part 2
+cat "${LIST_DIR}/Passwords/xato-net-10-million-passwords-10000.txt" \
+  | grep -vxFf ../data/ssh_root_pass_1 \
+  | head -n 2000 \
+  > ../data/ssh_root_pass_2
+
+# passwords for root test - part 3
+cat "${LIST_DIR}/Passwords/xato-net-10-million-passwords-10000.txt" \
+  | grep -vxFf ../data/ssh_root_pass_1 \
+  | grep -vxFf ../data/ssh_root_pass_2 \
+  > ../data/ssh_root_pass_3
+
+# passwords for user test - part 1
+head -n 100  "${LIST_DIR}/Passwords/xato-net-10-million-passwords-1000.txt" \
+  > ../data/ssh_user_pass_1
+
+# passwords for user test - part 2
+cat "${LIST_DIR}/Passwords/xato-net-10-million-passwords-1000.txt" \
+  | grep -vxFf ../data/ssh_user_pass_1 \
+  | head -n 200 \
+  > ../data/ssh_user_pass_2
+
+# passwords for user test - part 3
+cat "${LIST_DIR}/Passwords/xato-net-10-million-passwords-1000.txt" \
+  | grep -vxFf ../data/ssh_user_pass_1 \
+  | grep -vxFf ../data/ssh_user_pass_2 \
+  > ../data/ssh_user_pass_3
 
 
 # http
@@ -28,7 +54,7 @@ cp "${LIST_DIR}/Passwords/xato-net-10-million-passwords-10000.txt" \
 l=https://raw.githubusercontent.com/Kikobeats/top-user-agents/master/index.json
 curl -s ${l} | grep M | cut -d'"' -f2 > ../data/http_user-agent
 
-# common www files - fast
+# common www files and dirs - fast
 d=/usr/share/seclists/Discovery/Web-Content
 cat ${d}/raft-small-files.txt \
   ${d}/raft-small-directories.txt \
@@ -40,12 +66,19 @@ cat ${d}/raft-small-files.txt \
   | sed '/\/$/d' \
   | sed '/ /d' \
   | sed '/\?/d' \
+  | sed '/\*/d' \
+  | sed '/\!/d' \
+  | sed '/\&/d' \
+  | sed '/\$/d' \
+  | sed '/\t/d' \
   | sed '/#/d' \
+  | sed '/</d' \
+  | sed '/^%/d' \
+  | sed '/^$/d' \
   | sort -u \
-  > ../data/http_files_fast
+  > ../data/http_common_fast
 
-# common www files - full
-d=/usr/share/seclists/Discovery/Web-Content
+# common www files and dirs - full
 cat ${d}/raft-large-files.txt \
   ${d}/raft-large-directories.txt \
   ${d}/CMS/* \
@@ -73,10 +106,29 @@ cat ${d}/raft-large-files.txt \
   | sed '/\/$/d' \
   | sed '/ /d' \
   | sed '/\?/d' \
+  | sed '/\*/d' \
+  | sed '/\!/d' \
+  | sed '/\&/d' \
+  | sed '/\$/d' \
+  | sed '/\t/d' \
   | sed '/#/d' \
+  | sed '/</d' \
+  | sed '/^%/d' \
+  | sed '/^$/d' \
   | sed '/svn\/pristine/d' \
-  | grep -vxFf ../data/http_files_fast \
   | sort -u \
-  > ../data/http_files_full
+  > ../data/http_common_full
+
+# common www files
+cat ${d}/raft-small-files.txt \
+  | sed '/ /d' \
+  | sed '/^$/d' \
+  > ../data/http_file
+
+# common www dirs
+cat ${d}/raft-small-directories.txt \
+  | sed '/ /d' \
+  | sed '/^$/d' \
+  > ../data/http_dir
 
 echo done.

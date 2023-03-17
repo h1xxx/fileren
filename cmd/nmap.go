@@ -41,8 +41,11 @@ func (t *targetT) nmapRun(c cmdT) {
 	runCmd(t.host, &c)
 
 	nmapScan, err := nmap.ReadScan(fp.Join(t.host, "nmap", c.name+".xml"))
-	c.nmapScan = nmapScan.Hosts[0]
 	errExit(err)
+
+	if len(nmapScan.Hosts) > 0 {
+		c.nmapScan = nmapScan.Hosts[0]
+	}
 
 	MU.Lock()
 	t.cmds[c.name] = c
@@ -67,7 +70,7 @@ func (t *targetT) nmapRun(c cmdT) {
 
 func (t *targetT) getTestPorts(c *cmdT) {
 	switch c.name {
-	case "nmap_tcp_fast_1", "nmap_tcp_fast_2":
+	case "tcp_fast_1", "tcp_fast_2":
 		for _, p := range c.nmapScan.Ports {
 			if p.State.State != "open" {
 				continue
@@ -82,7 +85,7 @@ func (t *targetT) getTestPorts(c *cmdT) {
 			t.tcp[p.PortId] = info
 		}
 
-	case "nmap_udp_fast":
+	case "udp_fast":
 		for _, p := range c.nmapScan.Ports {
 			if p.State.State != "open" {
 				continue

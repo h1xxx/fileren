@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"os"
 	"os/exec"
 	"sync"
 
@@ -14,22 +13,28 @@ func (t *targetT) testHttp(port int, portInfo portInfoT) {
 	print("testing %s on port %d...\n", portInfo.service, port)
 
 	httpWg := &sync.WaitGroup{}
-	httpWg.Add(2)
+	httpWg.Add(3)
 	go t.whatWeb(t.host, "fast", port, httpWg)
-	go t.ffufCommonFiles(t.host, "fast", port, httpWg)
+	go t.whatWeb(t.host, "full", port, httpWg)
+	go t.ffufCommon(t.host, "fast", port, httpWg)
 	httpWg.Wait()
 
-	httpWg.Add(2)
-	go t.whatWeb(t.host, "full", port, httpWg)
-	go t.ffufCommonFiles(t.host, "full", port, httpWg)
+	httpWg.Add(1)
+	go t.ffufCommon(t.host, "full", port, httpWg)
 	httpWg.Wait()
+
+	/*
+		httpWg.Add(1)
+		t.ffufDirFile(t.host, port, httpWg)
+		httpWg.Wait()
+	*/
 
 	t.wg.Done()
 }
 
 func (t *targetT) whatWeb(host, scan string, port int, wg *sync.WaitGroup) {
 	var c cmdT
-	c.name = "http_whatweb_" + scan
+	c.name = scan
 	c.bin = "whatweb"
 
 	var level int
@@ -53,14 +58,15 @@ func (t *targetT) whatWeb(host, scan string, port int, wg *sync.WaitGroup) {
 	wg.Done()
 }
 
-func (t *targetT) ffufCommonFiles(host, scan string, port int, wg *sync.WaitGroup) {
+func (t *targetT) ffufCommon(host, scan string, port int, wg *sync.WaitGroup) {
 	var c cmdT
-	c.name = "http_ffuf_files_" + scan
+	c.name = "common_" + scan
 	c.bin = "ffuf"
 
-	wordlist := "./data/http_files_" + scan
+	wordlist := "./data/http_common_" + scan
 
-	f := "-noninteractive -r -t 64 -r -o %s/ffuf/files_%s.json "
+	f := "-noninteractive -r -t 64 -r -o %s/ffuf/common_%s.json "
+	f += "-recursion -recursion-depth 1 -recursion-strategy greedy "
 	f += "-w %s:FUZZ -u http://%s:%d/FUZZ"
 	argsS := fmt.Sprintf(f, t.host, scan, wordlist, host, port)
 
@@ -69,10 +75,31 @@ func (t *targetT) ffufCommonFiles(host, scan string, port int, wg *sync.WaitGrou
 	c.args = append(c.args, "-H")
 	c.args = append(c.args, fmt.Sprintf("User-Agent: %s", getRandomUA()))
 
-	os.MkdirAll(fp.Join(t.host, "ffuf"), 0750)
+	runCmd(host, &c)
+	cleanFfuf(fp.Join(host, c.bin, c.name))
+
+	wg.Done()
+}
+
+func (t *targetT) ffufDirFile(host string, port int, wg *sync.WaitGroup) {
+	var c cmdT
+	c.name = "dirfile"
+	c.bin = "ffuf"
+
+	dirlist := "./data/http_dir"
+	filelist := "./data/http_file"
+
+	f := "-noninteractive -r -t 64 -r -o %s/ffuf/dirfile.json "
+	f += "-w %s:DIR -w %s:FILE -u http://%s:%d/DIR/FILE"
+	argsS := fmt.Sprintf(f, t.host, dirlist, filelist, host, port)
+
+	c.args = str.Split(argsS, " ")
+
+	c.args = append(c.args, "-H")
+	c.args = append(c.args, fmt.Sprintf("User-Agent: %s", getRandomUA()))
 
 	runCmd(host, &c)
-	cleanFfuf(fp.Join(host, c.name))
+	cleanFfuf(fp.Join(host, c.bin, c.name))
 
 	wg.Done()
 }

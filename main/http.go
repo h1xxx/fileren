@@ -2,11 +2,12 @@ package main
 
 import (
 	"fmt"
-	"os/exec"
 	"sync"
 
 	fp "path/filepath"
 	str "strings"
+
+	"sectest/ffuf"
 )
 
 func (t *targetT) testHttp(port int, portInfo portInfoT) {
@@ -76,7 +77,8 @@ func (t *targetT) ffufCommon(host, scan string, port int, wg *sync.WaitGroup) {
 	c.args = append(c.args, fmt.Sprintf("User-Agent: %s", getRandomUA()))
 
 	runCmd(host, &c)
-	cleanFfuf(fp.Join(host, c.bin, c.name))
+	err := ffuf.CleanFfuf(fp.Join(host, c.bin, c.name))
+	errExit(err)
 
 	wg.Done()
 }
@@ -99,27 +101,8 @@ func (t *targetT) ffufDirFile(host string, port int, wg *sync.WaitGroup) {
 	c.args = append(c.args, fmt.Sprintf("User-Agent: %s", getRandomUA()))
 
 	runCmd(host, &c)
-	cleanFfuf(fp.Join(host, c.bin, c.name))
+	err := ffuf.CleanFfuf(fp.Join(host, c.bin, c.name))
+	errExit(err)
 
 	wg.Done()
-}
-
-// cleans out output file from ffuf
-// removes control characters and all progress lines, except for the last one
-func cleanFfuf(file string) {
-	c := fmt.Sprintf("sed 's|\\r|\\n|g' %s", file)
-	c += " | sed 's|\\x1B\\[2K||g'"
-	c += " | sed 's|\\x1B\\[0m||g'"
-	c += " | tac"
-	c += " | sed '0,/Progress/!{//d}'"
-	c += " | tac"
-	c += " | sed '/^$/d'"
-	c += fmt.Sprintf(" > %s.tmp", file)
-	c += fmt.Sprintf(" ; mv %s.tmp %s", file, file)
-
-	cmd := exec.Command("sh", "-c", c)
-	err := cmd.Run()
-	if err != nil {
-		errExit(err)
-	}
 }

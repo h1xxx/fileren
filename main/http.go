@@ -13,7 +13,8 @@ func (t *targetT) testHttp(port int, portInfo portInfoT) {
 	go t.ffufCommon(t.host, "fast", port, httpWg)
 	httpWg.Wait()
 
-	httpWg.Add(1)
+	httpWg.Add(2)
+	go t.wgetGet(t.host, port, httpWg)
 	go t.ffufRec(t.host, "fast", "1", port, httpWg)
 	httpWg.Wait()
 

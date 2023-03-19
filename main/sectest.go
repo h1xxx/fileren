@@ -30,13 +30,14 @@ type targetT struct {
 
 // status: "ok", "error" or "done"
 type cmdT struct {
-	name     string
-	bin      string
-	args     []string
-	status   string
-	start    time.Time
-	runTime  time.Duration
-	nmapScan nmap.HostT
+	name      string
+	bin       string
+	args      []string
+	errIgnore bool
+	status    string
+	start     time.Time
+	runTime   time.Duration
+	nmapScan  nmap.HostT
 }
 
 type portInfoT struct {

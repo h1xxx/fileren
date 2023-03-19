@@ -39,7 +39,7 @@ func runCmd(host string, c *cmdT) {
 	c.start = time.Now()
 	err = cmd.Run()
 
-	if err == nil {
+	if err == nil || c.errIgnore {
 		c.status = "ok"
 	} else {
 		c.status = "error"

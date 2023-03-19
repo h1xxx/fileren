@@ -139,7 +139,7 @@ func main() {
 	}
 
 	t.wg.Wait()
-	t.printInfo()
+	//t.printInfo()
 }
 
 func (t *targetT) portsStarted() bool {

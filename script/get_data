@@ -119,16 +119,24 @@ cat ${d}/raft-large-files.txt \
   | sort -u \
   > ../data/http_common_full
 
-# common www files
-cat ${d}/raft-small-files.txt \
-  | sed '/ /d' \
-  | sed '/^$/d' \
-  > ../data/http_file
-
 # common www dirs
-cat ${d}/raft-small-directories.txt \
+cat ${d}/raft-large-directories.txt \
   | sed '/ /d' \
   | sed '/^$/d' \
   > ../data/http_dir
+
+# files for recursive scan
+cat ../data/http_common_fast \
+  | grep -v '/' \
+  | grep -v '^\.$' \
+  | grep -v '^\.\.$' \
+  > ../data/http_file_rec_fast
+
+# files for recursive scan
+cat ../data/http_common_full \
+  | grep -v '/' \
+  | grep -v '^\.$' \
+  | grep -v '^\.\.$' \
+  > ../data/http_file_rec_full
 
 echo done.

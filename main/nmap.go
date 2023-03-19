@@ -53,11 +53,11 @@ func (t *targetT) nmapRun(c cmdT) {
 	MU.Unlock()
 
 	switch c.name {
-	case "nmap_tcp_fast_1":
+	case "tcp_fast_1":
 		t.tcp1Scanned = true
-	case "nmap_tcp_fast_2":
+	case "tcp_fast_2":
 		t.tcp2Scanned = true
-	case "nmap_udp_fast":
+	case "udp_fast":
 		t.udpScanned = true
 	}
 

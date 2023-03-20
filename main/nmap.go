@@ -34,6 +34,9 @@ func (t *targetT) makeNmapCmd(name, argsS string) cmdT {
 	c.args = append(c.args, "--script-args")
 	c.args = append(c.args, "http.useragent="+getRandomUA())
 
+	c.args = append(c.args, "--script-args")
+	c.args = append(c.args, "httpspider.maxpagecount=-1")
+
 	return c
 }
 

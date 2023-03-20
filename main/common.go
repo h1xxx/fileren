@@ -16,7 +16,7 @@ import (
 func runCmd(host string, c *cmdT) {
 	outFile := fp.Join(host, c.bin, c.name)
 	if cmdIsDone(outFile) {
-		print("%s: %s already done; skipping\n", c.bin, c.name)
+		print("%s: %s already done, skipping\n", c.bin, c.name)
 		c.status = "done"
 		return
 	}
@@ -51,7 +51,7 @@ func runCmd(host string, c *cmdT) {
 	fmt.Fprintf(fd, "sectest cmd status: %s\n", c.status)
 	fmt.Fprintf(fd, "sectest cmd time: %s\n", c.runTime.Round(time.Second))
 
-	msg := "%s:%s done in %s, %s\n"
+	msg := "%s: %s done in %s, %s\n"
 	print(msg, c.bin, c.name, c.runTime.Round(time.Second), c.status)
 
 	fd.Close()

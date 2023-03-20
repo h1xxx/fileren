@@ -15,36 +15,57 @@ grep -v -e '^pi$' -e '^root$' \
   "${LIST_DIR}/Usernames/top-usernames-shortlist.txt" > ../data/ssh_user
 
 # passwords for root test - part 1
-head -n 1000  "${LIST_DIR}/Passwords/xato-net-10-million-passwords-10000.txt" \
+head -n 300 "${LIST_DIR}/Passwords/xato-net-10-million-passwords-10000.txt" \
   > ../data/ssh_root_pass_1
 
 # passwords for root test - part 2
-cat "${LIST_DIR}/Passwords/xato-net-10-million-passwords-10000.txt" \
+head -n 1000 "${LIST_DIR}/Passwords/xato-net-10-million-passwords-10000.txt" \
   | grep -vxFf ../data/ssh_root_pass_1 \
-  | head -n 2000 \
   > ../data/ssh_root_pass_2
 
 # passwords for root test - part 3
-cat "${LIST_DIR}/Passwords/xato-net-10-million-passwords-10000.txt" \
+head -n 3000 "${LIST_DIR}/Passwords/xato-net-10-million-passwords-10000.txt" \
   | grep -vxFf ../data/ssh_root_pass_1 \
   | grep -vxFf ../data/ssh_root_pass_2 \
   > ../data/ssh_root_pass_3
 
 # passwords for user test - part 1
-head -n 100  "${LIST_DIR}/Passwords/xato-net-10-million-passwords-1000.txt" \
+head -n 30 "${LIST_DIR}/Passwords/xato-net-10-million-passwords-1000.txt" \
   > ../data/ssh_user_pass_1
 
 # passwords for user test - part 2
-cat "${LIST_DIR}/Passwords/xato-net-10-million-passwords-1000.txt" \
+head -n 100 "${LIST_DIR}/Passwords/xato-net-10-million-passwords-1000.txt" \
   | grep -vxFf ../data/ssh_user_pass_1 \
-  | head -n 200 \
   > ../data/ssh_user_pass_2
 
 # passwords for user test - part 3
-cat "${LIST_DIR}/Passwords/xato-net-10-million-passwords-1000.txt" \
+head -n 300 "${LIST_DIR}/Passwords/xato-net-10-million-passwords-1000.txt" \
   | grep -vxFf ../data/ssh_user_pass_1 \
   | grep -vxFf ../data/ssh_user_pass_2 \
   > ../data/ssh_user_pass_3
+
+
+# ftp brute force files
+# ---------------------
+
+# usernames
+grep -v -e '^pi$' \
+  "${LIST_DIR}/Usernames/top-usernames-shortlist.txt" > ../data/ftp_user
+
+# passwords - part 1
+head -n 500 "${LIST_DIR}/Passwords/xato-net-10-million-passwords-10000.txt" \
+  > ../data/ftp_pass_1
+
+# passwords - part 2
+head -n 1500 "${LIST_DIR}/Passwords/xato-net-10-million-passwords-10000.txt" \
+  | grep -vxFf ../data/ftp_pass_1 \
+  > ../data/ftp_pass_2
+
+# passwords - part 3
+head -n 4000 "${LIST_DIR}/Passwords/xato-net-10-million-passwords-10000.txt" \
+  | grep -vxFf ../data/ftp_pass_1 \
+  | grep -vxFf ../data/ftp_pass_2 \
+  > ../data/ftp_pass_3
 
 
 # http

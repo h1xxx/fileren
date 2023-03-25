@@ -1,0 +1,5 @@
+add https to ffuf
+if 80 443 are available check if 80 is a separate site, a redir or are the same
+
+add parameter fuzzing to selected pages (like login, or where &id= is possible)
+dump cookies

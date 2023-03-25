@@ -55,7 +55,7 @@ func GetDirs(ffufRes []FfufResult, host, scan, l, dirFile string) error {
 
 		var exists bool
 		_, exists = dirMap[fp.Base(loc)]
-		if exists && !locIsFile(loc) {
+		if exists && !locIsFile(loc) && res.Status != 401 {
 			ffufDirs += str.Trim(loc, "/") + "\n"
 		}
 	}

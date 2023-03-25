@@ -112,6 +112,9 @@ func main() {
 			case "http":
 				t.wg.Add(1)
 				go t.testHttp(p, pi)
+			case "http-proxy":
+				t.wg.Add(1)
+				go t.testHttp(p, pi)
 			default:
 				msg := "ignoring %s on tcp port %d.\n"
 				print(msg, pi.service, p)

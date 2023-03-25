@@ -19,7 +19,7 @@ func (t *targetT) ffufCommon(host, scan string, port int, wg *sync.WaitGroup) {
 
 	wordlist := "./data/http_common_" + scan
 
-	f := "-noninteractive -r -t 64 -r -o %s/ffuf/common_%s.json "
+	f := "-se -noninteractive -r -t 64 -r -o %s/ffuf/common_%s.json "
 	f += "-w %s:FUZZ -u http://%s:%d/FUZZ"
 	argsS := fmt.Sprintf(f, t.host, scan, wordlist, host, port)
 
@@ -57,7 +57,7 @@ func (t *targetT) ffufRec(host, scan, l string, port int, wg *sync.WaitGroup) {
 		return
 	}
 
-	f := "-noninteractive -r -t 64 -r -o %s/ffuf/rec_%s_l%s.json "
+	f := "-se -noninteractive -r -t 64 -r -o %s/ffuf/rec_%s_l%s.json "
 	f += "-fc 401,403 "
 	f += "-w %s:DIR -w %s:FILE -u http://%s:%d/DIR/FILE"
 	argsS := fmt.Sprintf(f, t.host, scan, l, dirlist, filelist, host, port)

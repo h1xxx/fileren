@@ -24,7 +24,7 @@ head -n 1000 "${LIST_DIR}/Passwords/xato-net-10-million-passwords-10000.txt" \
   > ../data/ssh_root_pass_2
 
 # passwords for root test - part 3
-head -n 3000 "${LIST_DIR}/Passwords/xato-net-10-million-passwords-10000.txt" \
+head -n 2000 "${LIST_DIR}/Passwords/xato-net-10-million-passwords-10000.txt" \
   | grep -vxFf ../data/ssh_root_pass_1 \
   | grep -vxFf ../data/ssh_root_pass_2 \
   > ../data/ssh_root_pass_3
@@ -39,7 +39,7 @@ head -n 100 "${LIST_DIR}/Passwords/xato-net-10-million-passwords-1000.txt" \
   > ../data/ssh_user_pass_2
 
 # passwords for user test - part 3
-head -n 300 "${LIST_DIR}/Passwords/xato-net-10-million-passwords-1000.txt" \
+head -n 200 "${LIST_DIR}/Passwords/xato-net-10-million-passwords-1000.txt" \
   | grep -vxFf ../data/ssh_user_pass_1 \
   | grep -vxFf ../data/ssh_user_pass_2 \
   > ../data/ssh_user_pass_3

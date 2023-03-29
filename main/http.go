@@ -27,5 +27,6 @@ func (t *targetT) testHttp(pi portInfoT) {
 	go t.ffufRec(t.host, "full", "1", pi, httpWg)
 	httpWg.Wait()
 
+	t.httpInProgress = false
 	t.wg.Done()
 }

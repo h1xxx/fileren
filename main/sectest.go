@@ -25,6 +25,7 @@ type targetT struct {
 	tcp1Scanned bool
 	tcp2Scanned bool
 	udpScanned  bool
+	httpInProgress bool
 	wg          *sync.WaitGroup
 }
 
@@ -114,8 +115,11 @@ func main() {
 				t.wg.Add(1)
 				go t.testSsh(pi)
 			case "http":
-				t.wg.Add(1)
-				go t.testHttp(pi)
+				if ! t.httpInProgress {
+					t.httpInProgress = true
+					t.wg.Add(1)
+					go t.testHttp(pi)
+				}
 			case "http-proxy":
 				t.wg.Add(1)
 				go t.testHttp(pi)

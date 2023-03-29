@@ -4,27 +4,27 @@ import (
 	"sync"
 )
 
-func (t *targetT) testHttp(port int, portInfo portInfoT) {
-	print("testing %s on port %d...\n", portInfo.service, port)
+func (t *targetT) testHttp(pi portInfoT) {
+	print("testing %s on port %d...\n", pi.service, pi.port)
 
 	httpWg := &sync.WaitGroup{}
 	httpWg.Add(2)
-	go t.whatWeb(t.host, "fast", port, httpWg)
-	go t.ffufCommon(t.host, "fast", port, httpWg)
+	go t.whatWeb(t.host, "fast", pi, httpWg)
+	go t.ffufCommon(t.host, "fast", pi, httpWg)
 	httpWg.Wait()
 
 	httpWg.Add(2)
-	go t.wgetGet(t.host, port, httpWg)
-	go t.ffufRec(t.host, "fast", "1", port, httpWg)
+	go t.wgetGet(t.host, pi, httpWg)
+	go t.ffufRec(t.host, "fast", "1", pi, httpWg)
 	httpWg.Wait()
 
 	httpWg.Add(2)
-	go t.whatWeb(t.host, "full", port, httpWg)
-	go t.ffufCommon(t.host, "full", port, httpWg)
+	go t.whatWeb(t.host, "full", pi, httpWg)
+	go t.ffufCommon(t.host, "full", pi, httpWg)
 	httpWg.Wait()
 
 	httpWg.Add(1)
-	go t.ffufRec(t.host, "full", "1", port, httpWg)
+	go t.ffufRec(t.host, "full", "1", pi, httpWg)
 	httpWg.Wait()
 
 	t.wg.Done()

@@ -7,9 +7,9 @@ import (
 	str "strings"
 )
 
-func (t *targetT) whatWeb(host, scan string, port int, wg *sync.WaitGroup) {
+func (t *targetT) whatWeb(host, scan string, pi portInfoT, wg *sync.WaitGroup) {
 	var c cmdT
-	c.name = scan
+	c.name = fmt.Sprintf("%s_%d", scan, pi.port)
 	c.bin = "whatweb"
 
 	var level int
@@ -20,6 +20,11 @@ func (t *targetT) whatWeb(host, scan string, port int, wg *sync.WaitGroup) {
 		level = 4
 	}
 
+	var sslSuffix string
+	if pi.tunnel == "ssl" {
+		sslSuffix = "s"
+	}
+
 	argsS := fmt.Sprintf("-a%d -t64 --colour=never -v --no-errors", level)
 
 	c.args = str.Split(argsS, " ")
@@ -27,7 +32,8 @@ func (t *targetT) whatWeb(host, scan string, port int, wg *sync.WaitGroup) {
 	c.args = append(c.args, "-U")
 	c.args = append(c.args, getRandomUA())
 
-	c.args = append(c.args, fmt.Sprintf("%s:%d", host, port))
+	c.args = append(c.args, fmt.Sprintf("http%s://%s:%d",
+		sslSuffix, host, pi.port))
 
 	runCmd(host, &c)
 	wg.Done()

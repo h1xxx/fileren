@@ -9,21 +9,21 @@ import (
 	str "strings"
 )
 
-func (t *targetT) testFtp(port int, portInfo portInfoT) {
-	print("testing %s on port %d...\n", portInfo.service, port)
+func (t *targetT) testFtp(pi portInfoT) {
+	print("testing %s on port %d...\n", pi.service, pi.port)
 
 	wg := &sync.WaitGroup{}
 	wg.Add(2)
-	go t.ftpMirror("anonymous", "anonymous", port, wg)
-	go t.ftpBrute("1", port, wg)
+	go t.ftpMirror("anonymous", "anonymous", pi.port, wg)
+	go t.ftpBrute("1", pi.port, wg)
 	wg.Wait()
 
 	wg.Add(1)
-	go t.ftpBrute("2", port, wg)
+	go t.ftpBrute("2", pi.port, wg)
 	wg.Wait()
 
 	wg.Add(1)
-	go t.ftpBrute("3", port, wg)
+	go t.ftpBrute("3", pi.port, wg)
 	wg.Wait()
 
 	t.wg.Done()

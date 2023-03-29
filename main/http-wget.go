@@ -10,11 +10,16 @@ import (
 	str "strings"
 )
 
-func (t *targetT) wgetGet(host string, port int, wg *sync.WaitGroup) {
+func (t *targetT) wgetGet(host string, pi portInfoT, wg *sync.WaitGroup) {
 	var c cmdT
-	c.name = fmt.Sprintf("http_%d_get_%s", port, host)
+	c.name = fmt.Sprintf("http_%d_get_%s", pi.port, host)
 	c.bin = "wget"
 	c.errIgnore = true
+
+	var sslSuffix string
+	if pi.tunnel == "ssl" {
+		sslSuffix = "s"
+	}
 
 	argsS := "-mHpE -e robots=off -T 10 -t 3 "
 	argsS += "--retry-connrefused --restrict-file-names=unix "
@@ -24,16 +29,17 @@ func (t *targetT) wgetGet(host string, port int, wg *sync.WaitGroup) {
 
 	c.args = append(c.args, "-P")
 	c.args = append(c.args, fmt.Sprintf("%s/wget/http_%d_get_dir",
-		t.host, port))
+		t.host, pi.port))
 	c.args = append(c.args, "-U")
 	c.args = append(c.args, getRandomUA())
 	c.args = append(c.args, "-D")
 	c.args = append(c.args, host)
-	c.args = append(c.args, fmt.Sprintf("http://%s:%d", host, port))
+	c.args = append(c.args, fmt.Sprintf("http%s://%s:%d",
+		sslSuffix, host, pi.port))
 
 	runCmd(host, &c)
 
-	wgetSpider(fmt.Sprintf("%s/wget/http_%d_get_%s", t.host, port, host))
+	wgetSpider(fmt.Sprintf("%s/wget/http_%d_get_%s", t.host, pi.port, host))
 	wg.Done()
 }
 

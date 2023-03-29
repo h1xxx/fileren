@@ -42,7 +42,9 @@ type cmdT struct {
 
 type portInfoT struct {
 	started bool
+	port    int
 	service string
+	tunnel  string
 	product string
 	ver     string
 }
@@ -96,6 +98,8 @@ func main() {
 	// wait a bit before other cmds are executed to print nmap info at once
 	time.Sleep(100 * time.Millisecond)
 
+	return
+
 	for {
 		for p, pi := range t.tcp {
 			if pi.started {
@@ -105,16 +109,16 @@ func main() {
 			switch pi.service {
 			case "ftp":
 				t.wg.Add(1)
-				go t.testFtp(p, pi)
+				go t.testFtp(pi)
 			case "ssh":
 				t.wg.Add(1)
-				go t.testSsh(p, pi)
+				go t.testSsh(pi)
 			case "http":
 				t.wg.Add(1)
-				go t.testHttp(p, pi)
+				go t.testHttp(pi)
 			case "http-proxy":
 				t.wg.Add(1)
-				go t.testHttp(p, pi)
+				go t.testHttp(pi)
 			default:
 				msg := "ignoring %s on tcp port %d.\n"
 				print(msg, pi.service, p)

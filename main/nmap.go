@@ -23,7 +23,8 @@ func (t *targetT) makeNmapCmd(name, argsS string) cmdT {
 	c.args = str.Split(argsS, " ")
 
 	scripts := "(auth or default or discovery or intrusive or vuln) and "
-	scripts += "not (*robtex* or *brute* or ssh-run or http-slowloris)"
+	scripts += "not (*robtex* or *brute* or ssh-run or http-slowloris or "
+	scripts += "http-comments-displayer or targets-asn)"
 
 	if str.Contains(name, "_full") {
 		c.args = append(c.args, "--version-all")
@@ -81,7 +82,9 @@ func (t *targetT) getTestPorts(c *cmdT) {
 
 			var info portInfoT
 
+			info.port = p.PortId
 			info.service = p.Service.Name
+			info.tunnel = p.Service.Tunnel
 			info.product = p.Service.Product
 			info.ver = p.Service.Ver
 
@@ -96,6 +99,7 @@ func (t *targetT) getTestPorts(c *cmdT) {
 
 			var info portInfoT
 
+			info.port = p.PortId
 			info.service = p.Service.Name
 			info.product = p.Service.Product
 			info.ver = p.Service.Ver

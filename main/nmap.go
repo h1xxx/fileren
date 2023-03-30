@@ -1,9 +1,12 @@
 package main
 
 import (
+	"fmt"
+
 	fp "path/filepath"
-	"sectest/nmap"
 	str "strings"
+
+	"sectest/nmap"
 )
 
 func (t *targetT) makeNmapCmd(name, argsS string) cmdT {
@@ -48,7 +51,7 @@ func (t *targetT) makeNmapCmd(name, argsS string) cmdT {
 }
 
 func (t *targetT) nmapRun(c cmdT) {
-	runCmd(t.host, &c)
+	runCmd(t.host, "nmap", &c)
 
 	nmapScan, err := nmap.ReadScan(fp.Join(t.host, "nmap", c.name+".xml"))
 	errExit(err)
@@ -89,6 +92,7 @@ func (t *targetT) getTestPorts(c *cmdT) {
 			var info portInfoT
 
 			info.port = p.PortId
+			info.portS = fmt.Sprintf("%d", p.PortId)
 			info.service = p.Service.Name
 			info.tunnel = p.Service.Tunnel
 			info.product = p.Service.Product
@@ -106,6 +110,7 @@ func (t *targetT) getTestPorts(c *cmdT) {
 			var info portInfoT
 
 			info.port = p.PortId
+			info.portS = fmt.Sprintf("%d", p.PortId)
 			info.service = p.Service.Name
 			info.product = p.Service.Product
 			info.ver = p.Service.Ver

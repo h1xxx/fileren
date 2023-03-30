@@ -75,7 +75,7 @@ head -n 4000 "${LIST_DIR}/Passwords/xato-net-10-million-passwords-10000.txt" \
 l=https://raw.githubusercontent.com/Kikobeats/top-user-agents/master/index.json
 curl -s ${l} | grep M | cut -d'"' -f2 > ../data/http_user-agent
 
-# common www files and dirs - fast
+# common www files and dirs
 d=/usr/share/seclists/Discovery/Web-Content
 cat ${d}/raft-small-files.txt \
   ${d}/raft-small-directories.txt \
@@ -97,14 +97,15 @@ cat ${d}/raft-small-files.txt \
   | sed '/^%/d' \
   | sed '/^$/d' \
   | sort -u \
-  > ../data/http_common_fast
+  > ../data/http_url_enum
 
+# todo: review what's cool here and remove
 # common www files and dirs - full
 cat ${d}/raft-large-files.txt \
   ${d}/raft-large-directories.txt \
   ${d}/CMS/* \
   ${d}/SVNDigger/all.txt \
-  ${d}/api/*.txt \
+  ${d}/api/api-endpoints.txt \
   ${d}/{A,C,F,H,I,J,O,R,S,U,V,a,f,g,h,j,n,o,p,q,u,v}*.txt \
   ${d}/Logins.fuzz.txt \
   ${d}/LotusNotes.fuzz.txt \
@@ -147,17 +148,10 @@ cat ${d}/raft-large-directories.txt \
   > ../data/http_dir
 
 # files for recursive scan
-cat ../data/http_common_fast \
+cat ../data/http_url_enum \
   | grep -v '/' \
   | grep -v '^\.$' \
   | grep -v '^\.\.$' \
-  > ../data/http_file_rec_fast
-
-# files for recursive scan
-cat ../data/http_common_full \
-  | grep -v '/' \
-  | grep -v '^\.$' \
-  | grep -v '^\.\.$' \
-  > ../data/http_file_rec_full
+  > ../data/http_url_enum_rec_file
 
 echo done.

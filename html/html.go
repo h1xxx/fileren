@@ -180,20 +180,20 @@ func isPassVal(val string) bool {
 	return false
 }
 
-func DumpHtmlForms(path, outPrefix string) error {
+func DumpHtmlForms(host, path, outDir, formsFile, loginFile string) error {
 	files, err := walkDir(path)
 	if err != nil {
 		return err
 	}
 
 	opts := os.O_CREATE | os.O_TRUNC | os.O_WRONLY
-	formsFd, err := os.OpenFile(outPrefix+"_forms", opts, 0640)
+	formsFd, err := os.OpenFile(fp.Join(outDir, formsFile), opts, 0640)
 	if err != nil {
 		return err
 	}
 	defer formsFd.Close()
 
-	paramsFd, err := os.OpenFile(outPrefix+"_login_params", opts, 0640)
+	paramsFd, err := os.OpenFile(fp.Join(outDir, loginFile), opts, 0640)
 	if err != nil {
 		return err
 	}
@@ -205,7 +205,7 @@ func DumpHtmlForms(path, outPrefix string) error {
 			continue
 		}
 
-		loc := str.TrimPrefix(file, path)
+		loc := str.TrimPrefix(file, path+"/"+host)
 		loginParams := GetLoginParams(loc, elements)
 		fmt.Fprintf(formsFd, "%s\n", file)
 		fmt.Fprintf(formsFd, "%s\n\n", str.Repeat("=", 79))

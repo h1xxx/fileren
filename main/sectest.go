@@ -44,6 +44,7 @@ type cmdT struct {
 type portInfoT struct {
 	started bool
 	port    int
+	portS   string
 	service string
 	tunnel  string
 	product string

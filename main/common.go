@@ -13,16 +13,16 @@ import (
 	str "strings"
 )
 
-func runCmd(host string, c *cmdT) {
-	outFile := fp.Join(host, c.bin, c.name)
+func runCmd(host, portS string, c *cmdT) {
+	outFile := fp.Join(host, portS, c.name+".out")
 	if cmdIsDone(outFile) {
-		print("%s: %s already done, skipping\n", c.bin, c.name)
+		print("%s: %s already done, skipping\n", portS, c.name)
 		c.status = "done"
 		return
 	}
-	os.MkdirAll(fp.Join(host, c.bin), 0750)
+	os.MkdirAll(fp.Join(host, portS), 0750)
 
-	print("starting %s: %s...\n", c.bin, c.name)
+	print("%s: %s starting...\n", portS, c.name)
 
 	flags := os.O_CREATE | os.O_TRUNC | os.O_WRONLY
 	fd, err := os.OpenFile(outFile, flags, 0640)

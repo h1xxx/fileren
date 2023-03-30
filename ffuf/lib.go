@@ -32,7 +32,7 @@ func GetUrls(file string) ([]FfufResult, error) {
 	return ffufOut.Results, nil
 }
 
-func GetDirs(ffufRes []FfufResult, host, scan, l, dirFile string) error {
+func GetDirs(ffufRes []FfufResult, host, l, dirFile, outF string) error {
 	var ffufDirs string
 	dirMap := make(map[string]empty)
 
@@ -64,10 +64,8 @@ func GetDirs(ffufRes []FfufResult, host, scan, l, dirFile string) error {
 		return nil
 	}
 
-	os.MkdirAll(fp.Join(host, "tmp"), 0750)
-	file := fp.Join(host, "tmp", "ffuf_rec_"+scan+"_l"+l)
 	flags := os.O_CREATE | os.O_TRUNC | os.O_WRONLY
-	fd, err = os.OpenFile(file, flags, 0644)
+	fd, err = os.OpenFile(outF, flags, 0644)
 	if err != nil {
 		return err
 	}

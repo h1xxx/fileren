@@ -14,11 +14,11 @@ import (
 
 func (t *targetT) wgetGet(host string, pi portInfoT, wg *sync.WaitGroup) {
 	var c cmdT
-	c.name = fmt.Sprintf("%d_%s_wget", pi.port, host)
+	c.name = fmt.Sprintf("wget_%s", host)
 	c.bin = "wget"
 	c.exitCodeIgnore = true
 
-	mirrorDir := fmt.Sprintf("%s/wget/%d_%s_mirror", t.host, pi.port, host)
+	mirrorDir := fmt.Sprintf("%s/%d/mirror_%s", t.host, pi.port, host)
 
 	var sslSuffix string
 	if pi.tunnel == "ssl" {
@@ -40,13 +40,16 @@ func (t *targetT) wgetGet(host string, pi portInfoT, wg *sync.WaitGroup) {
 	c.args = append(c.args, fmt.Sprintf("http%s://%s:%d",
 		sslSuffix, host, pi.port))
 
-	runCmd(host, &c)
+	runCmd(host, pi.portS, &c)
 
-	wgetSpider(mirrorDir)
+	wgetOut := fmt.Sprintf("%s/%d/wget_%s.out", t.host, pi.port, host)
+	wgetSpider(host, wgetOut)
 
-	outPrefix := fmt.Sprintf("%s/wget/%d_%s", t.host, pi.port, host)
-	html.DumpHtmlForms(mirrorDir, outPrefix)
-	paramsList, err := html.ParseLoginParams(outPrefix + "_login_params")
+	// extract forms and login parameters
+	outDir := fmt.Sprintf("%s/%d", t.host, pi.port)
+	html.DumpHtmlForms(host, mirrorDir, outDir,
+		"forms_"+host, "login_params_"+host)
+	paramsList, err := html.ParseLoginParams(outDir + "/login_params_" + host)
 	errExit(err)
 	fmt.Println(paramsList)
 
@@ -54,7 +57,7 @@ func (t *targetT) wgetGet(host string, pi portInfoT, wg *sync.WaitGroup) {
 }
 
 // cleans out output file from wget by removing irrelevant lines
-func wgetSpider(file string) error {
+func wgetSpider(host, file string) error {
 	fd, err := os.Open(file)
 	if err != nil {
 		return err
@@ -114,7 +117,7 @@ func wgetSpider(file string) error {
 			urlI.mime = mime
 
 		case str.HasPrefix(line, "Saving to: "):
-			_, loc, _ := str.Cut(line, "_mirror/")
+			_, loc, _ := str.Cut(line, "mirror_"+host+"/")
 			loc = str.Trim(loc, "’")
 			if !str.HasSuffix(urlI.url, loc) {
 				_, loc, _ = str.Cut(loc, "/")
@@ -135,7 +138,7 @@ func wgetSpider(file string) error {
 			urlI.code, urlI.size, urlI.mime, urlI.url)
 	}
 
-	file = str.Replace(file, "_wget_log", "_spider", 1)
+	file = str.Replace(file, "mirror_", "spider_", 1)
 	flags := os.O_CREATE | os.O_TRUNC | os.O_WRONLY
 	fd, err = os.OpenFile(file, flags, 0644)
 	if err != nil {

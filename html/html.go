@@ -180,21 +180,20 @@ func isPassVal(val string) bool {
 	return false
 }
 
-func DumpHtmlForms(path, outDir string) error {
+func DumpHtmlForms(path, outPrefix string) error {
 	files, err := walkDir(path)
 	if err != nil {
 		return err
 	}
 
 	opts := os.O_CREATE | os.O_TRUNC | os.O_WRONLY
-	formsFd, err := os.OpenFile(fp.Join(outDir, "forms"), opts, 0640)
+	formsFd, err := os.OpenFile(outPrefix+"_forms", opts, 0640)
 	if err != nil {
 		return err
 	}
 	defer formsFd.Close()
 
-	paramsFile := fp.Join(outDir, "login_params")
-	paramsFd, err := os.OpenFile(paramsFile, opts, 0640)
+	paramsFd, err := os.OpenFile(outPrefix+"_login_params", opts, 0640)
 	if err != nil {
 		return err
 	}

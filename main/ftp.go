@@ -31,7 +31,7 @@ func (t *targetT) testFtp(pi portInfoT) {
 
 func (t *targetT) ftpBrute(scan string, port int, wg *sync.WaitGroup) {
 	var c cmdT
-	c.name = fmt.Sprintf("ftp_%d_%s", port, scan)
+	c.name = fmt.Sprintf("%d_ftp_%s", port, scan)
 	c.bin = "hydra"
 
 	var argsS string
@@ -49,7 +49,7 @@ func (t *targetT) ftpBrute(scan string, port int, wg *sync.WaitGroup) {
 
 func (t *targetT) ftpMirror(user, pass string, port int, wg *sync.WaitGroup) {
 	var c cmdT
-	c.name = fmt.Sprintf("%s_mirror_%d", user, port)
+	c.name = fmt.Sprintf("%d_%s_lftp", port, user)
 	c.bin = "lftp"
 
 	portS := fmt.Sprintf("%d", port)
@@ -68,8 +68,8 @@ func (t *targetT) ftpMirror(user, pass string, port int, wg *sync.WaitGroup) {
 	}
 
 	formatS := "set net:max-retries 2; mirror -v "
-	formatS += "-O %s/lftp/%s_mirror_%d_dir; exit"
-	ftpC := fmt.Sprintf(formatS, t.host, user, port)
+	formatS += "-O %s/lftp/%d_%s_mirror; exit"
+	ftpC := fmt.Sprintf(formatS, t.host, port, user)
 
 	c.args = []string{"-e", ftpC}
 

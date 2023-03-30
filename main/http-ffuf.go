@@ -14,7 +14,7 @@ import (
 
 func (t *targetT) ffufCommon(host, scan string, pi portInfoT, wg *sync.WaitGroup) {
 	var c cmdT
-	c.name = fmt.Sprintf("common_%s_%d", scan, pi.port)
+	c.name = fmt.Sprintf("%d_common_%s", pi.port, scan)
 	c.bin = "ffuf"
 
 	wordlist := "./data/http_common_" + scan
@@ -24,9 +24,10 @@ func (t *targetT) ffufCommon(host, scan string, pi portInfoT, wg *sync.WaitGroup
 		sslSuffix = "s"
 	}
 
-	f := "-se -noninteractive -r -t 64 -r -o %s/ffuf/common_%s.json "
-	f += "-w %s:FUZZ -u http%s://%s:%d/FUZZ"
-	argsS := fmt.Sprintf(f, t.host, scan, wordlist, sslSuffix, host, pi.port)
+	formatS := "-se -noninteractive -r -t 64 -r -o %s/ffuf/%s.json "
+	formatS += "-w %s:FUZZ -u http%s://%s:%d/FUZZ"
+	argsS := fmt.Sprintf(formatS,
+		t.host, c.name, wordlist, sslSuffix, host, pi.port)
 
 	c.args = str.Split(argsS, " ")
 
@@ -42,7 +43,8 @@ func (t *targetT) ffufCommon(host, scan string, pi portInfoT, wg *sync.WaitGroup
 
 // l - recursion level
 func (t *targetT) ffufRec(host, scan, l string, pi portInfoT, wg *sync.WaitGroup) {
-	file := fmt.Sprintf("%s/ffuf/common_%s.json", t.host, scan)
+	// read input from ffufCommon
+	file := fmt.Sprintf("%s/ffuf/%d_common_%s.json", t.host, pi.port, scan)
 	ffufRes, err := ffuf.GetUrls(file)
 	errExit(err)
 
@@ -50,7 +52,7 @@ func (t *targetT) ffufRec(host, scan, l string, pi portInfoT, wg *sync.WaitGroup
 	errExit(err)
 
 	var c cmdT
-	c.name = fmt.Sprintf("rec_%s_%d_l%s", scan, pi.port, l)
+	c.name = fmt.Sprintf("%d_rec_%s_l%s", pi.port, scan, l)
 	c.bin = "ffuf"
 
 	dirlist := fp.Join(host, "tmp", "ffuf_rec_"+scan+"_l"+l)
@@ -67,10 +69,10 @@ func (t *targetT) ffufRec(host, scan, l string, pi portInfoT, wg *sync.WaitGroup
 		sslSuffix = "s"
 	}
 
-	f := "-se -noninteractive -r -t 64 -r -o %s/ffuf/rec_%s_l%s.json "
-	f += "-fc 401,403 "
-	f += "-w %s:DIR -w %s:FILE -u http%s://%s:%d/DIR/FILE"
-	argsS := fmt.Sprintf(f, t.host, scan, l, dirlist, filelist,
+	formatS := "-se -noninteractive -r -t 64 -r -o %s/ffuf/%s.json "
+	formatS += "-fc 401,403 "
+	formatS += "-w %s:DIR -w %s:FILE -u http%s://%s:%d/DIR/FILE"
+	argsS := fmt.Sprintf(formatS, t.host, c.name, dirlist, filelist,
 		sslSuffix, host, pi.port)
 
 	c.args = str.Split(argsS, " ")

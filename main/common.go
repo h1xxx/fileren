@@ -29,8 +29,7 @@ func runCmd(host string, c *cmdT) {
 	errExit(err)
 
 	fmt.Fprintf(fd, "sectest cmd: %s %s\n", c.bin, str.Join(c.args, " "))
-	sep := "---------------------------------------"
-	fmt.Fprintf(fd, "%s%s-\n", sep, sep)
+	fmt.Fprintf(fd, "%s\n", str.Repeat("-", 79))
 
 	cmd := exec.Command(c.bin, c.args...)
 	cmd.Stdout = fd
@@ -39,7 +38,9 @@ func runCmd(host string, c *cmdT) {
 	c.start = time.Now()
 	err = cmd.Run()
 
-	if err == nil || c.errIgnore {
+	if errInOutFile(outFile) {
+		c.status = "error"
+	} else if err == nil || c.exitCodeIgnore {
 		c.status = "ok"
 	} else {
 		c.status = "error"
@@ -47,7 +48,7 @@ func runCmd(host string, c *cmdT) {
 
 	c.runTime = time.Since(c.start)
 
-	fmt.Fprintf(fd, "%s%s-\n", sep, sep)
+	fmt.Fprintf(fd, "%s\n", str.Repeat("-", 79))
 	fmt.Fprintf(fd, "sectest cmd status: %s\n", c.status)
 	fmt.Fprintf(fd, "sectest cmd time: %s\n", c.runTime.Round(time.Second))
 
@@ -59,6 +60,28 @@ func runCmd(host string, c *cmdT) {
 
 func cmdIsDone(outFile string) bool {
 	cmd := exec.Command("grep", "-q", "sectest cmd status: ok", outFile)
+	err := cmd.Run()
+	if err != nil {
+		return false
+	}
+	return true
+}
+
+func errInOutFile(outFile string) bool {
+	errStrings := []string{
+		"Receiving spurious errors, exiting.",
+	}
+
+	var q []string
+	q = append(q, "-F")
+	q = append(q, "-q")
+	for _, s := range errStrings {
+		q = append(q, "-e")
+		q = append(q, s)
+	}
+	q = append(q, outFile)
+
+	cmd := exec.Command("grep", q...)
 	err := cmd.Run()
 	if err != nil {
 		return false

@@ -8,13 +8,17 @@ import (
 	"sync"
 
 	str "strings"
+
+	"sectest/html"
 )
 
 func (t *targetT) wgetGet(host string, pi portInfoT, wg *sync.WaitGroup) {
 	var c cmdT
-	c.name = fmt.Sprintf("http_%d_get_%s", pi.port, host)
+	c.name = fmt.Sprintf("%d_%s_wget", pi.port, host)
 	c.bin = "wget"
-	c.errIgnore = true
+	c.exitCodeIgnore = true
+
+	mirrorDir := fmt.Sprintf("%s/wget/%d_%s_mirror", t.host, pi.port, host)
 
 	var sslSuffix string
 	if pi.tunnel == "ssl" {
@@ -28,8 +32,7 @@ func (t *targetT) wgetGet(host string, pi portInfoT, wg *sync.WaitGroup) {
 	c.args = str.Split(argsS, " ")
 
 	c.args = append(c.args, "-P")
-	c.args = append(c.args, fmt.Sprintf("%s/wget/http_%d_get_dir",
-		t.host, pi.port))
+	c.args = append(c.args, mirrorDir)
 	c.args = append(c.args, "-U")
 	c.args = append(c.args, getRandomUA())
 	c.args = append(c.args, "-D")
@@ -39,7 +42,14 @@ func (t *targetT) wgetGet(host string, pi portInfoT, wg *sync.WaitGroup) {
 
 	runCmd(host, &c)
 
-	wgetSpider(fmt.Sprintf("%s/wget/http_%d_get_%s", t.host, pi.port, host))
+	wgetSpider(mirrorDir)
+
+	outPrefix := fmt.Sprintf("%s/wget/%d_%s", t.host, pi.port, host)
+	html.DumpHtmlForms(mirrorDir, outPrefix)
+	paramsList, err := html.ParseLoginParams(outPrefix + "_login_params")
+	errExit(err)
+	fmt.Println(paramsList)
+
 	wg.Done()
 }
 
@@ -104,7 +114,7 @@ func wgetSpider(file string) error {
 			urlI.mime = mime
 
 		case str.HasPrefix(line, "Saving to: "):
-			_, loc, _ := str.Cut(line, "_get_dir/")
+			_, loc, _ := str.Cut(line, "_mirror/")
 			loc = str.Trim(loc, "’")
 			if !str.HasSuffix(urlI.url, loc) {
 				_, loc, _ = str.Cut(loc, "/")
@@ -125,7 +135,7 @@ func wgetSpider(file string) error {
 			urlI.code, urlI.size, urlI.mime, urlI.url)
 	}
 
-	file = str.Replace(file, "_get_", "_spider_", 1)
+	file = str.Replace(file, "_wget_log", "_spider", 1)
 	flags := os.O_CREATE | os.O_TRUNC | os.O_WRONLY
 	fd, err = os.OpenFile(file, flags, 0644)
 	if err != nil {

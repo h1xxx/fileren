@@ -9,7 +9,7 @@ import (
 
 func (t *targetT) whatWeb(host, scan string, pi portInfoT, wg *sync.WaitGroup) {
 	var c cmdT
-	c.name = fmt.Sprintf("%s_%d", scan, pi.port)
+	c.name = fmt.Sprintf("%d_%s", pi.port, scan)
 	c.bin = "whatweb"
 
 	var level int

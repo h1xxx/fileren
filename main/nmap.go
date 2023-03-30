@@ -11,11 +11,17 @@ func (t *targetT) makeNmapCmd(name, argsS string) cmdT {
 	c.name = name
 	c.bin = "nmap"
 
+	argsS += " -g53 --open"
+
+	argsS += " --max-rtt-timeout 1250ms --min-rtt-timeout 100ms"
+	argsS += " --initial-rtt-timeout 500ms --max-retries 2"
+	argsS += " --host-timeout 90m"
 	if str.Contains(name, "_fast") {
-		argsS += " --script-timeout 3 --max-retries 2"
+		argsS += " --script-timeout 3 "
+	} else {
+		argsS += " --script-timeout 3m "
 	}
 
-	argsS += " -T4 -g53 --open"
 	argsS += " -oX " + fp.Join(t.host, "nmap", name+".xml")
 	argsS += " -oG " + fp.Join(t.host, "nmap", name+".grep")
 	argsS += " " + t.host
@@ -24,7 +30,7 @@ func (t *targetT) makeNmapCmd(name, argsS string) cmdT {
 
 	scripts := "(auth or default or discovery or intrusive or vuln) and "
 	scripts += "not (*robtex* or *brute* or ssh-run or http-slowloris or "
-	scripts += "http-comments-displayer or targets-asn)"
+	scripts += "http-comments-displayer or targets-asn or fcrdns)"
 
 	if str.Contains(name, "_full") {
 		c.args = append(c.args, "--version-all")

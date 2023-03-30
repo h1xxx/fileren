@@ -21,24 +21,24 @@ type targetT struct {
 	udp  map[int]portInfoT
 	cmds map[string]cmdT
 
-	tcpScanned  bool
-	tcp1Scanned bool
-	tcp2Scanned bool
-	udpScanned  bool
+	tcpScanned     bool
+	tcp1Scanned    bool
+	tcp2Scanned    bool
+	udpScanned     bool
 	httpInProgress bool
-	wg          *sync.WaitGroup
+	wg             *sync.WaitGroup
 }
 
 // status: "ok", "error" or "done"
 type cmdT struct {
-	name      string
-	bin       string
-	args      []string
-	errIgnore bool
-	status    string
-	start     time.Time
-	runTime   time.Duration
-	nmapScan  nmap.HostT
+	name           string
+	bin            string
+	args           []string
+	exitCodeIgnore bool
+	status         string
+	start          time.Time
+	runTime        time.Duration
+	nmapScan       nmap.HostT
 }
 
 type portInfoT struct {
@@ -99,8 +99,6 @@ func main() {
 	// wait a bit before other cmds are executed to print nmap info at once
 	time.Sleep(100 * time.Millisecond)
 
-	return
-
 	for {
 		for p, pi := range t.tcp {
 			if pi.started {
@@ -111,25 +109,34 @@ func main() {
 			case "ftp":
 				t.wg.Add(1)
 				go t.testFtp(pi)
+				pi.started = true
+				t.tcp[p] = pi
 			case "ssh":
 				t.wg.Add(1)
 				go t.testSsh(pi)
+				pi.started = true
+				t.tcp[p] = pi
 			case "http":
-				if ! t.httpInProgress {
+				if !t.httpInProgress {
 					t.httpInProgress = true
 					t.wg.Add(1)
 					go t.testHttp(pi)
+					pi.started = true
+					t.tcp[p] = pi
 				}
 			case "http-proxy":
-				t.wg.Add(1)
-				go t.testHttp(pi)
+				if !t.httpInProgress {
+					t.httpInProgress = true
+					t.wg.Add(1)
+					go t.testHttp(pi)
+					pi.started = true
+					t.tcp[p] = pi
+				}
 			default:
 				msg := "ignoring %s on tcp port %d.\n"
 				print(msg, pi.service, p)
 			}
 
-			pi.started = true
-			t.tcp[p] = pi
 		}
 
 		for p, pi := range t.udp {

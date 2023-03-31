@@ -180,7 +180,7 @@ func isPassVal(val string) bool {
 	return false
 }
 
-func DumpHtmlForms(host, path, outDir, formsFile, loginFile string) error {
+func DumpHtmlForms(path, outDir, formsFile, loginFile string) error {
 	files, err := walkDir(path)
 	if err != nil {
 		return err
@@ -205,7 +205,7 @@ func DumpHtmlForms(host, path, outDir, formsFile, loginFile string) error {
 			continue
 		}
 
-		loc := str.TrimPrefix(file, path+"/"+host)
+		loc := str.TrimPrefix(file, path+"/")
 		loginParams := GetLoginParams(loc, elements)
 		fmt.Fprintf(formsFd, "%s\n", file)
 		fmt.Fprintf(formsFd, "%s\n\n", str.Repeat("=", 79))

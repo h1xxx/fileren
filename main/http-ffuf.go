@@ -48,7 +48,7 @@ func (t *targetT) ffufUrlEnumRec(host, l string, pi *portInfoT, wg *sync.WaitGro
 	ffufRes, err := ffuf.GetUrls(file)
 	errExit(err)
 
-	dirlist := fmt.Sprintf("%s/%s/url_enum_rec_l%s_%s.json",
+	dirlist := fmt.Sprintf("%s/%s/url_enum_rec_l%s_%s.dirs",
 		t.host, pi.portS, l, host)
 	err = ffuf.GetDirs(ffufRes, t.host, l, "data/http_dir", dirlist)
 	errExit(err)

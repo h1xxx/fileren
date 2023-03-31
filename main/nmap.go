@@ -14,7 +14,7 @@ func (t *targetT) makeNmapCmd(name, argsS string) cmdT {
 	c.name = name
 	c.bin = "nmap"
 
-	argsS += " -g53 --open --max-retries 2"
+	argsS += " -g53 --open --max-retries 2 --max-scan-delay 11ms"
 
 	// set -T4 for all scans apart from tcp_fast_2 scan which might
 	// interfere with heavy ffuf enumeration on network level

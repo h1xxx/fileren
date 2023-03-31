@@ -91,15 +91,15 @@ func main() {
 
 	t.wg.Add(5)
 
-	c := t.makeNmapCmd("tcp_fast_1", "-p1-10000 -sSVC")
+	c := t.makeNmapCmd("tcp_fast_1", "-p1-10000 -sSV")
 	go t.nmapRun(c)
 	time.Sleep(10 * time.Millisecond)
 
-	c = t.makeNmapCmd("tcp_fast_2", "-p10001-65535 -sSVC")
+	c = t.makeNmapCmd("tcp_fast_2", "-p10001-65535 -sSV")
 	go t.nmapRun(c)
 	time.Sleep(10 * time.Millisecond)
 
-	c = t.makeNmapCmd("udp_fast", "--top-ports 50 -sUVC")
+	c = t.makeNmapCmd("udp_fast", "--top-ports 50 -sUV")
 	go t.nmapRun(c)
 
 	// polling loop to start testing new ports that appear from nmap scans
@@ -175,13 +175,22 @@ func main() {
 
 		// slow down the loop and exit if all ports are being tested
 		time.Sleep(3 * time.Second)
-		if t.portsStarted() && t.tcpScanned && t.udpScanned {
+		if t.allScheduled() {
 			break
 		}
 	}
 
 	t.wg.Wait()
 	//t.printInfo()
+}
+
+func (t *targetT) allScheduled() bool {
+	if t.portsStarted() && t.tcpScanned && t.udpScanned {
+		if t.tcpFullStarted && t.udpFullStarted {
+			return true
+		}
+	}
+	return false
 }
 
 func (t *targetT) portsStarted() bool {

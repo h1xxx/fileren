@@ -89,16 +89,16 @@ func (t *targetT) getTestPorts(c *cmdT) {
 				continue
 			}
 
-			var info portInfoT
+			var pi portInfoT
 
-			info.port = p.PortId
-			info.portS = fmt.Sprintf("%d", p.PortId)
-			info.service = p.Service.Name
-			info.tunnel = p.Service.Tunnel
-			info.product = p.Service.Product
-			info.ver = p.Service.Ver
+			pi.port = p.PortId
+			pi.portS = fmt.Sprintf("%dt", p.PortId)
+			pi.service = p.Service.Name
+			pi.tunnel = p.Service.Tunnel
+			pi.product = p.Service.Product
+			pi.ver = p.Service.Ver
 
-			t.tcp[p.PortId] = info
+			t.tcp[p.PortId] = pi
 		}
 
 	case "udp_fast":
@@ -107,15 +107,15 @@ func (t *targetT) getTestPorts(c *cmdT) {
 				continue
 			}
 
-			var info portInfoT
+			var pi portInfoT
 
-			info.port = p.PortId
-			info.portS = fmt.Sprintf("%d", p.PortId)
-			info.service = p.Service.Name
-			info.product = p.Service.Product
-			info.ver = p.Service.Ver
+			pi.port = p.PortId
+			pi.portS = fmt.Sprintf("%du", p.PortId)
+			pi.service = p.Service.Name
+			pi.product = p.Service.Product
+			pi.ver = p.Service.Ver
 
-			t.udp[p.PortId] = info
+			t.udp[p.PortId] = pi
 		}
 	}
 }

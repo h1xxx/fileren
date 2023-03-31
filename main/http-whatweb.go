@@ -7,7 +7,7 @@ import (
 	str "strings"
 )
 
-func (t *targetT) whatWeb(host string, pi portInfoT, wg *sync.WaitGroup) {
+func (t *targetT) whatWeb(host string, pi *portInfoT, wg *sync.WaitGroup) {
 	var c cmdT
 	c.name = fmt.Sprintf("whatweb_%s", host)
 	c.bin = "whatweb"

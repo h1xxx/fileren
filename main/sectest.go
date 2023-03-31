@@ -12,6 +12,8 @@ import (
 	"time"
 
 	fp "path/filepath"
+
+	"sectest/html"
 	"sectest/nmap"
 )
 
@@ -43,12 +45,16 @@ type cmdT struct {
 
 type portInfoT struct {
 	started bool
-	port    int
-	portS   string
+
+	port  int
+	portS string
+
 	service string
 	tunnel  string
 	product string
 	ver     string
+
+	loginParams []html.LoginParamsT
 }
 
 type argsT struct {
@@ -109,35 +115,34 @@ func main() {
 			switch pi.service {
 			case "ftp":
 				t.wg.Add(1)
-				go t.testFtp(pi)
 				pi.started = true
+				go t.testFtp(pi)
 				t.tcp[p] = pi
 			case "ssh":
 				t.wg.Add(1)
-				go t.testSsh(pi)
 				pi.started = true
+				go t.testSsh(pi)
 				t.tcp[p] = pi
 			case "http":
 				if !t.httpInProgress {
 					t.httpInProgress = true
-					t.wg.Add(1)
-					go t.testHttp(pi)
 					pi.started = true
+					t.wg.Add(1)
+					go t.testHttp(&pi)
 					t.tcp[p] = pi
 				}
 			case "http-proxy":
 				if !t.httpInProgress {
 					t.httpInProgress = true
 					t.wg.Add(1)
-					go t.testHttp(pi)
 					pi.started = true
+					go t.testHttp(&pi)
 					t.tcp[p] = pi
 				}
 			default:
-				msg := "ignoring %s on tcp port %d.\n"
+				msg := "ignoring %s on tcp port %d\n"
 				print(msg, pi.service, p)
 			}
-
 		}
 
 		for p, pi := range t.udp {
@@ -147,7 +152,7 @@ func main() {
 
 			switch pi.service {
 			default:
-				msg := "ignoring %s on udp port %d.\n"
+				msg := "ignoring %s on udp port %d\n"
 				print(msg, pi.service, p)
 			}
 

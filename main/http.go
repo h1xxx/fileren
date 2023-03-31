@@ -1,20 +1,26 @@
 package main
 
 import (
+	"fmt"
 	"sync"
 )
 
-func (t *targetT) testHttp(pi portInfoT) {
-	print("testing %s on port %d...\n", pi.service, pi.port)
+func (t *targetT) testHttp(pi *portInfoT) {
+	print("testing %s on tcp port %d...\n", pi.service, pi.port)
 
 	httpWg := &sync.WaitGroup{}
-	httpWg.Add(2)
+	httpWg.Add(3)
+	go t.wgetGet(t.host, pi, httpWg)
 	go t.whatWeb(t.host, pi, httpWg)
 	go t.ffufUrlEnum(t.host, pi, httpWg)
 	httpWg.Wait()
 
-	httpWg.Add(2)
-	go t.wgetGet(t.host, pi, httpWg)
+	for _, params := range pi.loginParams {
+		fmt.Println(params)
+		//go t.ffufUrlEnum(t.host, pi, httpWg)
+	}
+
+	httpWg.Add(1)
 	go t.ffufUrlEnumRec(t.host, "1", pi, httpWg)
 	httpWg.Wait()
 

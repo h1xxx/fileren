@@ -16,17 +16,18 @@ import (
 func runCmd(host, portS string, c *cmdT) {
 	outFile := fp.Join(host, portS, c.name+".out")
 	if cmdIsDone(outFile) {
-		print("%s: %s already done, skipping\n", portS, c.name)
+		print("%s\t%s already done, skipping\n", portS, c.name)
 		c.status = "done"
 		return
 	}
 	os.MkdirAll(fp.Join(host, portS), 0750)
 
-	print("%s: %s starting...\n", portS, c.name)
+	print("%s\t%s starting...\n", portS, c.name)
 
 	flags := os.O_CREATE | os.O_TRUNC | os.O_WRONLY
 	fd, err := os.OpenFile(outFile, flags, 0640)
 	errExit(err)
+	defer fd.Close()
 
 	fmt.Fprintf(fd, "sectest cmd: %s %s\n", c.bin, str.Join(c.args, " "))
 	fmt.Fprintf(fd, "%s\n", str.Repeat("-", 79))
@@ -52,10 +53,8 @@ func runCmd(host, portS string, c *cmdT) {
 	fmt.Fprintf(fd, "sectest cmd status: %s\n", c.status)
 	fmt.Fprintf(fd, "sectest cmd time: %s\n", c.runTime.Round(time.Second))
 
-	msg := "%s: %s done in %s, %s\n"
-	print(msg, c.bin, c.name, c.runTime.Round(time.Second), c.status)
-
-	fd.Close()
+	msg := "%s\t%s done in %s, %s\n"
+	print(msg, portS, c.name, c.runTime.Round(time.Second), c.status)
 }
 
 func cmdIsDone(outFile string) bool {

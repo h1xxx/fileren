@@ -12,13 +12,13 @@ import (
 	"sectest/html"
 )
 
-func (t *targetT) wgetGet(host string, pi portInfoT, wg *sync.WaitGroup) {
+func (t *targetT) wgetGet(host string, pi *portInfoT, wg *sync.WaitGroup) {
 	var c cmdT
 	c.name = fmt.Sprintf("wget_%s", host)
 	c.bin = "wget"
 	c.exitCodeIgnore = true
 
-	mirrorDir := fmt.Sprintf("%s/%d/mirror_%s", t.host, pi.port, host)
+	mirrorDir := fmt.Sprintf("%s/%s/mirror_%s", t.host, pi.portS, host)
 
 	var sslSuffix string
 	if pi.tunnel == "ssl" {
@@ -42,16 +42,17 @@ func (t *targetT) wgetGet(host string, pi portInfoT, wg *sync.WaitGroup) {
 
 	runCmd(host, pi.portS, &c)
 
-	wgetOut := fmt.Sprintf("%s/%d/wget_%s.out", t.host, pi.port, host)
+	wgetOut := fmt.Sprintf("%s/%s/wget_%s.out", t.host, pi.portS, host)
 	wgetSpider(host, wgetOut)
 
 	// extract forms and login parameters
-	outDir := fmt.Sprintf("%s/%d", t.host, pi.port)
-	html.DumpHtmlForms(host, mirrorDir, outDir,
+	outDir := fmt.Sprintf("%s/%s", t.host, pi.portS)
+	html.DumpHtmlForms(mirrorDir, outDir,
 		"forms_"+host, "login_params_"+host)
-	paramsList, err := html.ParseLoginParams(outDir + "/login_params_" + host)
+
+	loginParams, err := html.ParseLoginParams(outDir + "/login_params_" + host)
 	errExit(err)
-	fmt.Println(paramsList)
+	pi.loginParams = append(pi.loginParams, loginParams...)
 
 	wg.Done()
 }
@@ -138,7 +139,8 @@ func wgetSpider(host, file string) error {
 			urlI.code, urlI.size, urlI.mime, urlI.url)
 	}
 
-	file = str.Replace(file, "mirror_", "spider_", 1)
+	file = str.Replace(file, "wget_", "spider_", 1)
+	file = str.TrimSuffix(file, ".out")
 	flags := os.O_CREATE | os.O_TRUNC | os.O_WRONLY
 	fd, err = os.OpenFile(file, flags, 0644)
 	if err != nil {

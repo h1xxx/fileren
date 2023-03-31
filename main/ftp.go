@@ -10,7 +10,7 @@ import (
 )
 
 func (t *targetT) testFtp(pi portInfoT) {
-	print("testing %s on port %d...\n", pi.service, pi.port)
+	print("testing %s on tcp port %d...\n", pi.service, pi.port)
 
 	wg := &sync.WaitGroup{}
 	wg.Add(2)
@@ -52,22 +52,22 @@ func (t *targetT) ftpMirror(user, pass string, pi portInfoT, wg *sync.WaitGroup)
 	c.name = fmt.Sprintf("lftp_%s", user)
 	c.bin = "lftp"
 
-	size, err := getFtpSize(t.host, pi.portS, user, pass)
+	size, err := getFtpSize(t.host, user, pass, pi.port)
 	var msg string
 	if err != nil {
-		msg = "%d: ftp user %s - can't get dir size, ignoring\n"
+		msg = "%s\tftp user %s - can't get dir size, ignoring\n"
 	} else if size > 1024 {
-		msg = "%d: ftp user %s - dir size too big, ignoring\n"
+		msg = "%s\tftp user %s - dir size too big, ignoring\n"
 	}
 	if err != nil || size > 1024 {
-		print(msg, pi.port, c.bin, user)
+		print(msg, pi.portS, c.bin, user)
 		wg.Done()
 		return
 	}
 
 	formatS := "set net:max-retries 2; mirror -v "
-	formatS += "-O %s/%d/mirror_%s; exit"
-	ftpC := fmt.Sprintf(formatS, t.host, pi.port, user)
+	formatS += "-O %s/%s/mirror_%s; exit"
+	ftpC := fmt.Sprintf(formatS, t.host, pi.portS, user)
 
 	c.args = []string{"-e", ftpC}
 
@@ -75,7 +75,7 @@ func (t *targetT) ftpMirror(user, pass string, pi portInfoT, wg *sync.WaitGroup)
 	c.args = append(c.args, user+","+pass)
 
 	c.args = append(c.args, "-p")
-	c.args = append(c.args, pi.portS)
+	c.args = append(c.args, fmt.Sprintf("%d", pi.port))
 	c.args = append(c.args, t.host)
 
 	runCmd(t.host, pi.portS, &c)
@@ -83,14 +83,14 @@ func (t *targetT) ftpMirror(user, pass string, pi portInfoT, wg *sync.WaitGroup)
 	wg.Done()
 }
 
-func getFtpSize(host, portS, user, pass string) (int, error) {
+func getFtpSize(host, user, pass string, port int) (int, error) {
 	c := []string{"-e", "set net:max-retries 2; du -m; exit"}
 
 	c = append(c, "-u")
 	c = append(c, user+","+pass)
 
 	c = append(c, "-p")
-	c = append(c, portS)
+	c = append(c, fmt.Sprintf("%d", port))
 	c = append(c, host)
 
 	cmd := exec.Command("lftp", c...)

@@ -8,7 +8,7 @@ import (
 )
 
 func (t *targetT) testSsh(pi portInfoT) {
-	print("testing %s on port %d...\n", pi.service, pi.port)
+	print("testing %s on tcp port %d...\n", pi.service, pi.port)
 
 	sshWg := &sync.WaitGroup{}
 

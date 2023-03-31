@@ -14,15 +14,20 @@ func (t *targetT) makeNmapCmd(name, argsS string) cmdT {
 	c.name = name
 	c.bin = "nmap"
 
-	argsS += " -g53 --open"
+	argsS += " -g53 --open --max-retries 2"
 
-	argsS += " --max-rtt-timeout 1250ms --min-rtt-timeout 100ms"
-	argsS += " --initial-rtt-timeout 500ms --max-retries 2"
-	argsS += " --host-timeout 90m"
+	// set -T4 for all scans apart from tcp_fast_2 scan which might
+	// interfere with heavy ffuf enumeration on network level
+	if name != "tcp_fast_2" {
+		argsS += " --max-rtt-timeout 1250ms --min-rtt-timeout 100ms"
+		argsS += " --initial-rtt-timeout 500ms"
+	}
+
+	// make fast scans really fast and limit their lifespan
 	if str.Contains(name, "_fast") {
-		argsS += " --script-timeout 3 "
+		argsS += " --script-timeout 3 --host-timeout 30m"
 	} else {
-		argsS += " --script-timeout 3m "
+		argsS += " --script-timeout 3m --host-timeout 90m"
 	}
 
 	argsS += " -oX " + fp.Join(t.host, "nmap", name+".xml")
@@ -61,9 +66,9 @@ func (t *targetT) nmapRun(c cmdT) {
 	}
 
 	MU.Lock()
+
 	t.cmds[c.name] = c
 	t.getTestPorts(&c)
-	MU.Unlock()
 
 	switch c.name {
 	case "tcp_fast_1":
@@ -77,6 +82,8 @@ func (t *targetT) nmapRun(c cmdT) {
 	if t.tcp1Scanned && t.tcp2Scanned {
 		t.tcpScanned = true
 	}
+
+	MU.Unlock()
 
 	t.wg.Done()
 }

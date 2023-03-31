@@ -23,10 +23,13 @@ type targetT struct {
 	udp  map[int]portInfoT
 	cmds map[string]cmdT
 
-	tcpScanned     bool
-	tcp1Scanned    bool
-	tcp2Scanned    bool
-	udpScanned     bool
+	tcpScanned  bool
+	tcp1Scanned bool
+	tcp2Scanned bool
+	udpScanned  bool
+
+	tcpFullStarted bool
+	udpFullStarted bool
 	httpInProgress bool
 	wg             *sync.WaitGroup
 }
@@ -90,23 +93,32 @@ func main() {
 
 	c := t.makeNmapCmd("tcp_fast_1", "-p1-10000 -sSVC")
 	go t.nmapRun(c)
+	time.Sleep(10 * time.Millisecond)
 
 	c = t.makeNmapCmd("tcp_fast_2", "-p10001-65535 -sSVC")
 	go t.nmapRun(c)
-
-	c = t.makeNmapCmd("tcp_full", "-p- -sS -sV -O")
-	go t.nmapRun(c)
+	time.Sleep(10 * time.Millisecond)
 
 	c = t.makeNmapCmd("udp_fast", "--top-ports 50 -sUVC")
 	go t.nmapRun(c)
 
-	c = t.makeNmapCmd("udp_full", "--top-ports 1000 -sUV")
-	go t.nmapRun(c)
-
-	// wait a bit before other cmds are executed to print nmap info at once
-	time.Sleep(100 * time.Millisecond)
-
+	// polling loop to start testing new ports that appear from nmap scans
 	for {
+		// start tcp full scan only when fast scans are completed
+		if t.tcpScanned && !t.tcpFullStarted {
+			t.tcpFullStarted = true
+			c = t.makeNmapCmd("tcp_full", "-p- -sS -sV -O")
+			go t.nmapRun(c)
+		}
+
+		// start udp full scan only when fast scan is completed
+		if t.udpScanned && !t.udpFullStarted {
+			t.udpFullStarted = true
+			c = t.makeNmapCmd("udp_full", "--top-ports 500 -sUV")
+			go t.nmapRun(c)
+		}
+
+		// search for new tcp ports that appear from nmap fast scans
 		for p, pi := range t.tcp {
 			if pi.started {
 				continue
@@ -145,6 +157,7 @@ func main() {
 			}
 		}
 
+		// search for new udp ports that appear from nmap fast scans
 		for p, pi := range t.udp {
 			if pi.started {
 				continue
@@ -160,6 +173,7 @@ func main() {
 			t.udp[p] = pi
 		}
 
+		// slow down the loop and exit if all ports are being tested
 		time.Sleep(3 * time.Second)
 		if t.portsStarted() && t.tcpScanned && t.udpScanned {
 			break

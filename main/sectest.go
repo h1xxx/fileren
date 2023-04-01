@@ -7,6 +7,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"math"
 	"os"
 	"sync"
 	"time"
@@ -22,6 +23,9 @@ type targetT struct {
 	tcp  map[int]portInfoT
 	udp  map[int]portInfoT
 	cmds map[string]cmdT
+
+	start   time.Time
+	runTime time.Duration
 
 	tcpScanned  bool
 	tcp1Scanned bool
@@ -81,6 +85,7 @@ func main() {
 
 	var t targetT
 	t.host = *args.host
+	t.start = time.Now()
 	t.tcp = make(map[int]portInfoT)
 	t.udp = make(map[int]portInfoT)
 	t.cmds = make(map[string]cmdT)
@@ -182,14 +187,18 @@ func main() {
 		}
 
 		// slow down the loop and exit if all ports are being tested
-		time.Sleep(3 * time.Second)
+		t.runTime = time.Since(t.start)
+		delay := int(math.Min(t.runTime.Minutes()+1, 15))
+		time.Sleep(time.Duration(delay) * time.Second)
 		if t.allScheduled() {
 			break
 		}
 	}
 
 	t.wg.Wait()
-	//t.printInfo()
+	t.runTime = time.Since(t.start)
+
+	print("all done in %s\n", t.runTime.Round(time.Second))
 }
 
 func (t *targetT) allScheduled() bool {

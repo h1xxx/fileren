@@ -22,6 +22,7 @@ func (t *targetT) testHttp(pi *portInfoT) {
 	go t.ffufUrlEnumRec(t.host, "1", pi, httpWg)
 	httpWg.Wait()
 
+	print("finished testing %s on tcp port %d\n", pi.service, pi.port)
 	t.httpInProgress = false
 	t.wg.Done()
 }

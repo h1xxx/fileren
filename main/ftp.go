@@ -26,6 +26,7 @@ func (t *targetT) testFtp(pi portInfoT) {
 	go t.ftpBrute("3", pi, wg)
 	wg.Wait()
 
+	print("finished testing %s on tcp port %d\n", pi.service, pi.port)
 	t.wg.Done()
 }
 

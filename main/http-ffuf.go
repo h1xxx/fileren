@@ -120,14 +120,17 @@ func (t *targetT) ffufLogin(host string, pi *portInfoT, form html.LoginParamsT) 
 	c.args = append(c.args, "Content-Type: application/x-www-form-urlencoded")
 
 	// test what is the actual response size to filter out errors
-	cmd := exec.Command(c.bin, c.args...)
-	err := cmd.Run()
-	errExit(err)
+	outFile := fp.Join(t.host, pi.portS, c.name+".out")
+	if !cmdIsDone(outFile) {
+		cmd := exec.Command(c.bin, c.args...)
+		err := cmd.Run()
+		errExit(err)
 
-	errRespSize, err = ffuf.GetRespSize(jsonOut)
-	if err != nil {
-		print("ffuf weblogin: can't determine response size, skipping")
-		return
+		errRespSize, err = ffuf.GetRespSize(jsonOut)
+		if err != nil {
+			print("ffuf weblogin: can't get resp size, skipping")
+			return
+		}
 	}
 
 	// replace test arguments with final values
@@ -143,6 +146,6 @@ func (t *targetT) ffufLogin(host string, pi *portInfoT, form html.LoginParamsT) 
 	}
 
 	runCmd(host, pi.portS, &c)
-	err = ffuf.CleanFfuf(fp.Join(t.host, pi.portS, c.name+".out"))
+	err := ffuf.CleanFfuf(outFile)
 	errExit(err)
 }

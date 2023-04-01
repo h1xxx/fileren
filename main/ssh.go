@@ -27,6 +27,7 @@ func (t *targetT) testSsh(pi portInfoT) {
 	go t.sshBruteUser("3", pi, sshWg)
 	sshWg.Wait()
 
+	print("finished testing %s on tcp port %d\n", pi.service, pi.port)
 	t.wg.Done()
 }
 

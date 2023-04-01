@@ -1,2 +1,2 @@
 build:
-	CGO_ENABLED=0 go build -o bin/sectest main/*.go
+	CGO_ENABLED=0 go build -o bin/sectest cmd/*.go

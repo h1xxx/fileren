@@ -13,19 +13,50 @@ import (
 	str "strings"
 )
 
-func runCmd(host, portS string, c *cmdT) {
-	outFile := fp.Join(host, portS, c.name+".out")
-	if cmdIsDone(outFile) {
-		print("%s\t%s already done, skipping\n", portS, c.name)
-		c.status = "done"
+func (t *targetT) prepareCmd(cname, bin, portS string, args []string) cmdT {
+	var c cmdT
+	c.name = cname
+	c.bin = bin
+	c.args = args
+	c.portS = portS
+
+	c.fileOut = fp.Join(t.host, portS, c.name+".out")
+	c.jsonOut = fp.Join(t.host, portS, c.name+".json")
+
+	MU.Lock()
+	// first check if cmd already exists and has non-empty args
+	// non-empty args are allowed to set initial file paths
+	val, keyExists := t.cmds[c.name]
+	if keyExists && len(val.args) != 0 {
+		errExit(fmt.Errorf("non-unique cmd name: %s", cname))
+	}
+
+	// add command to the global state
+	t.cmds[c.name] = c
+	MU.Unlock()
+
+	os.MkdirAll(fp.Join(t.host, portS), 0750)
+
+	return c
+}
+
+func (t *targetT) runCmd(c cmdT) {
+	if cmdIsDone(c.fileOut) {
+		print("%s\t%s already done\n", c.portS, c.name)
+		c.status = "ok"
+		c.done = true
+
+		MU.Lock()
+		t.cmds[c.name] = c
+		MU.Unlock()
+
 		return
 	}
-	os.MkdirAll(fp.Join(host, portS), 0750)
 
-	print("%s\t%s starting...\n", portS, c.name)
+	print("%s\t%s starting...\n", c.portS, c.name)
 
 	flags := os.O_CREATE | os.O_TRUNC | os.O_WRONLY
-	fd, err := os.OpenFile(outFile, flags, 0640)
+	fd, err := os.OpenFile(c.fileOut, flags, 0640)
 	errExit(err)
 	defer fd.Close()
 
@@ -39,7 +70,7 @@ func runCmd(host, portS string, c *cmdT) {
 	c.start = time.Now()
 	err = cmd.Run()
 
-	if errInOutFile(outFile) {
+	if errInOutFile(c.fileOut) {
 		c.status = "error"
 	} else if err == nil || c.exitCodeIgnore {
 		c.status = "ok"
@@ -47,14 +78,19 @@ func runCmd(host, portS string, c *cmdT) {
 		c.status = "error"
 	}
 
+	c.done = true
 	c.runTime = time.Since(c.start)
+
+	MU.Lock()
+	t.cmds[c.name] = c
+	MU.Unlock()
 
 	fmt.Fprintf(fd, "%s\n", str.Repeat("-", 79))
 	fmt.Fprintf(fd, "sectest cmd status: %s\n", c.status)
 	fmt.Fprintf(fd, "sectest cmd time: %s\n", c.runTime.Round(time.Second))
 
 	msg := "%s\t%s done in %s, %s\n"
-	print(msg, portS, c.name, c.runTime.Round(time.Second), c.status)
+	print(msg, c.portS, c.name, c.runTime.Round(time.Second), c.status)
 }
 
 func cmdIsDone(outFile string) bool {

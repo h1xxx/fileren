@@ -7,7 +7,6 @@ import (
 	"os/exec"
 	"sync"
 
-	fp "path/filepath"
 	str "strings"
 
 	"sectest/ffuf"
@@ -15,9 +14,8 @@ import (
 )
 
 func (t *targetT) ffufUrlEnum(host string, pi *portInfoT, wg *sync.WaitGroup) {
-	var c cmdT
-	c.name = fmt.Sprintf("url_enum_%s", host)
-	c.bin = "ffuf"
+	cname := fmt.Sprintf("url_enum_%s_%d", host, pi.port)
+	c := t.prepareCmd(cname, "ffuf", pi.portS, []string{})
 
 	wordlist := "./data/http_url_enum"
 
@@ -26,40 +24,47 @@ func (t *targetT) ffufUrlEnum(host string, pi *portInfoT, wg *sync.WaitGroup) {
 		sslSuffix = "s"
 	}
 
-	formatS := "-se -noninteractive -r -t 64 -r -o %s/%s/%s.json "
+	formatS := "-se -noninteractive -r -t 64 -r -o %s "
 	formatS += "-w %s:FUZZ -u http%s://%s:%d/FUZZ"
-	argsS := fmt.Sprintf(formatS,
-		t.host, pi.portS, c.name, wordlist, sslSuffix, host, pi.port)
+	argsS := fmt.Sprintf(formatS, c.jsonOut,
+		wordlist, sslSuffix, host, pi.port)
 
-	c.args = str.Split(argsS, " ")
+	args := str.Split(argsS, " ")
 
-	c.args = append(c.args, "-H")
-	c.args = append(c.args, fmt.Sprintf("User-Agent: %s", getRandomUA()))
+	args = append(args, "-H")
+	args = append(args, fmt.Sprintf("User-Agent: %s", getRandomUA()))
 
-	runCmd(host, pi.portS, &c)
-	err := ffuf.CleanFfuf(fp.Join(t.host, pi.portS, c.name+".out"))
-	errExit(err)
+	c = t.prepareCmd(cname, "ffuf", pi.portS, args)
+	t.runCmd(c)
+
+	err := ffuf.CleanFfuf(c.fileOut)
+	if err != nil {
+		msg := "error in %s: can't get clean ffuf output - %v\n"
+		print(msg, c.name, err)
+	}
 
 	wg.Done()
 }
 
 // l - recursion level
 func (t *targetT) ffufUrlEnumRec(host, l string, pi *portInfoT, wg *sync.WaitGroup) {
+	cname := fmt.Sprintf("url_enum_rec_l%s_%s_%d", l, host, pi.port)
+	c := t.prepareCmd(cname, "ffuf", pi.portS, []string{})
+
 	// read input from ffufUrlEnum
-	file := fmt.Sprintf("%s/%s/url_enum_%s.json", t.host, pi.portS, host)
+	file := fmt.Sprintf("%s/%s/url_enum_%s_%d.json",
+		t.host, pi.portS, host, pi.port)
 	ffufRes, err := ffuf.GetResults(file)
-	errExit(err)
-
-	dirlist := fmt.Sprintf("%s/%s/url_enum_rec_l%s_%s.dirs",
-		t.host, pi.portS, l, host)
-	err = ffuf.GetDirs(ffufRes, t.host, l, "data/http_dir", dirlist)
-	errExit(err)
-
-	var c cmdT
-	c.name = fmt.Sprintf("url_enum_%s_rec_l%s", host, l)
-	c.bin = "ffuf"
+	if err != nil {
+		msg := "error in %s: can't get ffuf results - %v\n"
+		print(msg, c.name, err)
+	}
 
 	filelist := "./data/http_url_enum_rec_file"
+	dirlist := fmt.Sprintf("%s/%s/url_enum_rec_l%s_%s_%d.dirs",
+		t.host, pi.portS, l, host, pi.port)
+	err = ffuf.GetDirs(ffufRes, t.host, l, "data/http_dir", dirlist)
+	errExit(err)
 
 	_, err = os.Stat(dirlist)
 	if errors.Is(err, os.ErrNotExist) {
@@ -72,28 +77,34 @@ func (t *targetT) ffufUrlEnumRec(host, l string, pi *portInfoT, wg *sync.WaitGro
 		sslSuffix = "s"
 	}
 
-	formatS := "-se -noninteractive -r -t 64 -r -o %s/%s/%s.json "
+	formatS := "-se -noninteractive -r -t 64 -r -o %s "
 	formatS += "-fc 401,403 "
 	formatS += "-w %s:DIR -w %s:FILE -u http%s://%s:%d/DIR/FILE"
-	argsS := fmt.Sprintf(formatS, t.host, pi.portS, c.name, dirlist,
-		filelist, sslSuffix, host, pi.port)
+	argsS := fmt.Sprintf(formatS, c.jsonOut,
+		dirlist, filelist, sslSuffix, host, pi.port)
 
-	c.args = str.Split(argsS, " ")
+	args := str.Split(argsS, " ")
 
-	c.args = append(c.args, "-H")
-	c.args = append(c.args, fmt.Sprintf("User-Agent: %s", getRandomUA()))
+	args = append(args, "-H")
+	args = append(args, fmt.Sprintf("User-Agent: %s", getRandomUA()))
 
-	runCmd(host, pi.portS, &c)
-	err = ffuf.CleanFfuf(fp.Join(t.host, pi.portS, c.name+".out"))
-	errExit(err)
+	c = t.prepareCmd(cname, "ffuf", pi.portS, args)
+	t.runCmd(c)
+
+	err = ffuf.CleanFfuf(c.fileOut)
+	if err != nil {
+		msg := "error in %s: can't get clean ffuf output - %v\n"
+		print(msg, c.name, err)
+	}
 
 	wg.Done()
 }
 
 func (t *targetT) ffufLogin(host string, pi *portInfoT, form html.LoginParamsT) {
-	var c cmdT
-	c.name = fmt.Sprintf("weblogin_%s_%s", form.Action, host)
-	c.bin = "ffuf"
+	cname := fmt.Sprintf("weblogin_%s_%s_%d",
+		str.Replace(form.Action, "/", "-", -1), host, pi.port)
+
+	c := t.prepareCmd(cname, "ffuf", pi.portS, []string{})
 
 	var sslSuffix string
 	if pi.tunnel == "ssl" {
@@ -101,51 +112,57 @@ func (t *targetT) ffufLogin(host string, pi *portInfoT, form html.LoginParamsT) 
 	}
 
 	errRespSize := 696969696969696969
-	jsonOut := fmt.Sprintf("%s/%s/%s.json", t.host, pi.portS, c.name)
 
 	formatS := "-se -noninteractive -r -t 64 -r -o %s "
 	formatS += "-w data/ffuf_testlist:USER -w data/ffuf_testlist:PASS "
 	formatS += "-u http%s://%s:%d/%s "
 	formatS += "-X POST -d %s=USER&%s=PASS -fs %d"
-	argsS := fmt.Sprintf(formatS, jsonOut,
+	argsS := fmt.Sprintf(formatS, c.jsonOut,
 		sslSuffix, host, pi.port, form.Action,
 		form.Login, form.Pass, errRespSize)
 
-	c.args = str.Split(argsS, " ")
+	args := str.Split(argsS, " ")
 
-	c.args = append(c.args, "-H")
-	c.args = append(c.args, fmt.Sprintf("User-Agent: %s", getRandomUA()))
+	args = append(args, "-H")
+	args = append(args, fmt.Sprintf("User-Agent: %s", getRandomUA()))
 
-	c.args = append(c.args, "-H")
-	c.args = append(c.args, "Content-Type: application/x-www-form-urlencoded")
+	args = append(args, "-H")
+	args = append(args, "Content-Type: application/x-www-form-urlencoded")
 
 	// test what is the actual response size to filter out errors
-	outFile := fp.Join(t.host, pi.portS, c.name+".out")
-	if !cmdIsDone(outFile) {
-		cmd := exec.Command(c.bin, c.args...)
+	if !cmdIsDone(c.fileOut) {
+		cmd := exec.Command(c.bin, args...)
 		err := cmd.Run()
-		errExit(err)
-
-		errRespSize, err = ffuf.GetRespSize(jsonOut)
 		if err != nil {
-			print("ffuf weblogin: can't get resp size, skipping")
+			msg := "error in %s: can't probe resp size - %v\n"
+			print(msg, c.name, err)
+		}
+
+		errRespSize, err = ffuf.GetRespSize(c.jsonOut)
+		if err != nil {
+			print("ffuf weblogin: can't get resp size, skipping\n")
 			return
 		}
 	}
 
 	// replace test arguments with final values
-	for i, v := range c.args {
+	for i, v := range args {
 		switch v {
 		case "696969696969696969":
-			c.args[i] = fmt.Sprintf("%d", errRespSize)
+			args[i] = fmt.Sprintf("%d", errRespSize)
 		case "data/ffuf_testlist:USER":
-			c.args[i] = "data/weblogin_user:USER"
+			args[i] = "data/weblogin_user:USER"
 		case "data/ffuf_testlist:PASS":
-			c.args[i] = "data/weblogin_pass:PASS"
+			args[i] = "data/weblogin_pass:PASS"
 		}
 	}
 
-	runCmd(host, pi.portS, &c)
-	err := ffuf.CleanFfuf(outFile)
-	errExit(err)
+	c = t.prepareCmd(cname, "ffuf", pi.portS, args)
+	t.runCmd(c)
+
+	err := ffuf.CleanFfuf(c.fileOut)
+	if err != nil {
+		msg := "error in %s: can't get clean ffuf output - %v\n"
+		print(msg, c.name, err)
+	}
 }

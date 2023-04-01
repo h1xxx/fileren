@@ -31,9 +31,7 @@ func (t *targetT) testFtp(pi portInfoT) {
 }
 
 func (t *targetT) ftpBrute(scan string, pi portInfoT, wg *sync.WaitGroup) {
-	var c cmdT
-	c.name = fmt.Sprintf("brute_%s", scan)
-	c.bin = "hydra"
+	cname := fmt.Sprintf("brute_%s_%d", scan, pi.port)
 
 	var argsS string
 	if scan == "1" {
@@ -42,16 +40,15 @@ func (t *targetT) ftpBrute(scan string, pi portInfoT, wg *sync.WaitGroup) {
 	argsS += fmt.Sprintf("-L %s -P %s -I -u -t 64 -s %d ftp://%s",
 		"./data/ftp_user", "./data/ftp_pass_"+scan, pi.port, t.host)
 
-	c.args = str.Split(argsS, " ")
+	args := str.Split(argsS, " ")
 
-	runCmd(t.host, pi.portS, &c)
+	c := t.prepareCmd(cname, "hydra", pi.portS, args)
+	t.runCmd(c)
 	wg.Done()
 }
 
 func (t *targetT) ftpMirror(user, pass string, pi portInfoT, wg *sync.WaitGroup) {
-	var c cmdT
-	c.name = fmt.Sprintf("lftp_%s", user)
-	c.bin = "lftp"
+	cname := fmt.Sprintf("lftp_%s_%d", user, pi.port)
 
 	size, err := getFtpSize(t.host, user, pass, pi.port)
 	var msg string
@@ -61,7 +58,7 @@ func (t *targetT) ftpMirror(user, pass string, pi portInfoT, wg *sync.WaitGroup)
 		msg = "%s\tftp user %s - dir size too big, ignoring\n"
 	}
 	if err != nil || size > 1024 {
-		print(msg, pi.portS, c.bin, user)
+		print(msg, pi.portS, user)
 		wg.Done()
 		return
 	}
@@ -70,16 +67,17 @@ func (t *targetT) ftpMirror(user, pass string, pi portInfoT, wg *sync.WaitGroup)
 	formatS += "-O %s/%s/mirror_%s; exit"
 	ftpC := fmt.Sprintf(formatS, t.host, pi.portS, user)
 
-	c.args = []string{"-e", ftpC}
+	args := []string{"-e", ftpC}
 
-	c.args = append(c.args, "-u")
-	c.args = append(c.args, user+","+pass)
+	args = append(args, "-u")
+	args = append(args, user+","+pass)
 
-	c.args = append(c.args, "-p")
-	c.args = append(c.args, fmt.Sprintf("%d", pi.port))
-	c.args = append(c.args, t.host)
+	args = append(args, "-p")
+	args = append(args, fmt.Sprintf("%d", pi.port))
+	args = append(args, t.host)
 
-	runCmd(t.host, pi.portS, &c)
+	c := t.prepareCmd(cname, "lftp", pi.portS, args)
+	t.runCmd(c)
 
 	wg.Done()
 }

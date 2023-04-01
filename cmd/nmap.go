@@ -10,18 +10,11 @@ import (
 )
 
 func (t *targetT) makeNmapCmd(name, argsS string) cmdT {
-	var c cmdT
-	c.name = name
-	c.bin = "nmap"
+	cname := name
 
 	argsS += " -g53 --open --max-retries 2 --max-scan-delay 11ms"
-
-	// set -T4 for all scans apart from tcp_fast_2 scan which might
-	// interfere with heavy ffuf enumeration on network level
-	if name != "tcp_fast_2" {
-		argsS += " --max-rtt-timeout 1250ms --min-rtt-timeout 100ms"
-		argsS += " --initial-rtt-timeout 500ms"
-	}
+	argsS += " --max-rtt-timeout 1250ms --min-rtt-timeout 100ms"
+	argsS += " --initial-rtt-timeout 500ms"
 
 	// make fast scans really fast and limit their lifespan
 	if str.Contains(name, "_fast") {
@@ -34,32 +27,37 @@ func (t *targetT) makeNmapCmd(name, argsS string) cmdT {
 	argsS += " -oG " + fp.Join(t.host, "nmap", name+".grep")
 	argsS += " " + t.host
 
-	c.args = str.Split(argsS, " ")
+	args := str.Split(argsS, " ")
 
 	scripts := "(auth or default or discovery or intrusive or vuln) and "
 	scripts += "not (*robtex* or *brute* or ssh-run or http-slowloris or "
 	scripts += "http-comments-displayer or targets-asn or fcrdns)"
 
 	if str.Contains(name, "_full") {
-		c.args = append(c.args, "--version-all")
-		c.args = append(c.args, "--script")
-		c.args = append(c.args, scripts)
+		args = append(args, "--version-all")
+		args = append(args, "--script")
+		args = append(args, scripts)
 	}
 
-	c.args = append(c.args, "--script-args")
-	c.args = append(c.args, "http.useragent="+getRandomUA())
+	args = append(args, "--script-args")
+	args = append(args, "http.useragent="+getRandomUA())
 
-	c.args = append(c.args, "--script-args")
-	c.args = append(c.args, "httpspider.maxpagecount=-1")
+	args = append(args, "--script-args")
+	args = append(args, "httpspider.maxpagecount=-1")
+
+	c := t.prepareCmd(cname, "nmap", "nmap", args)
 
 	return c
 }
 
 func (t *targetT) nmapRun(c cmdT) {
-	runCmd(t.host, "nmap", &c)
+	t.runCmd(c)
 
 	nmapScan, err := nmap.ReadScan(fp.Join(t.host, "nmap", c.name+".xml"))
-	errExit(err)
+	if err != nil {
+		msg := "critical error in %s: can't parse xml - %v\n"
+		print(msg, c.name, err)
+	}
 
 	if len(nmapScan.Hosts) > 0 {
 		c.nmapScan = nmapScan.Hosts[0]

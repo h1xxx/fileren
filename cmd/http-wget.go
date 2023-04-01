@@ -13,10 +13,7 @@ import (
 )
 
 func (t *targetT) wgetGet(host string, pi *portInfoT, wg *sync.WaitGroup) {
-	var c cmdT
-	c.name = fmt.Sprintf("wget_%s", host)
-	c.bin = "wget"
-	c.exitCodeIgnore = true
+	cname := fmt.Sprintf("wget_%s_%d", host, pi.port)
 
 	mirrorDir := fmt.Sprintf("%s/%s/mirror_%s", t.host, pi.portS, host)
 
@@ -29,29 +26,34 @@ func (t *targetT) wgetGet(host string, pi *portInfoT, wg *sync.WaitGroup) {
 	argsS += "--retry-connrefused --restrict-file-names=unix "
 	argsS += "--no-check-certificate --no-show-progres"
 
-	c.args = str.Split(argsS, " ")
+	args := str.Split(argsS, " ")
 
-	c.args = append(c.args, "-P")
-	c.args = append(c.args, mirrorDir)
-	c.args = append(c.args, "-U")
-	c.args = append(c.args, getRandomUA())
-	c.args = append(c.args, "-D")
-	c.args = append(c.args, host)
-	c.args = append(c.args, fmt.Sprintf("http%s://%s:%d",
+	args = append(args, "-P")
+	args = append(args, mirrorDir)
+	args = append(args, "-U")
+	args = append(args, getRandomUA())
+	args = append(args, "-D")
+	args = append(args, host)
+	args = append(args, fmt.Sprintf("http%s://%s:%d",
 		sslSuffix, host, pi.port))
 
-	runCmd(host, pi.portS, &c)
+	c := t.prepareCmd(cname, "wget", pi.portS, args)
+	c.exitCodeIgnore = true
+	t.runCmd(c)
 
-	wgetOut := fmt.Sprintf("%s/%s/wget_%s.out", t.host, pi.portS, host)
-	wgetSpider(host, wgetOut)
+	wgetSpider(host, c.fileOut)
 
 	// extract forms and login parameters
 	outDir := fmt.Sprintf("%s/%s", t.host, pi.portS)
 	html.DumpHtmlForms(mirrorDir, outDir,
 		"forms_"+host, "login_params_"+host)
 
-	loginParams, err := html.ParseLoginParams(outDir + "/login_params_" + host)
-	errExit(err)
+	loginParams, err := html.ParseLoginParams(
+		outDir + "/login_params_" + host)
+	if err != nil {
+		msg := "error in %s: can't get login parameters - %v\n"
+		print(msg, c.name, err)
+	}
 	pi.loginParams = append(pi.loginParams, loginParams...)
 
 	wg.Done()

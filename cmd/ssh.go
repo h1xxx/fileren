@@ -32,23 +32,19 @@ func (t *targetT) testSsh(pi portInfoT) {
 }
 
 func (t *targetT) sshBruteRoot(scan string, pi portInfoT, wg *sync.WaitGroup) {
-	var c cmdT
-	c.name = fmt.Sprintf("brute_root_%s", scan)
-	c.bin = "hydra"
-
+	cname := fmt.Sprintf("brute_root_%s_%d", scan, pi.port)
 	argsS := fmt.Sprintf("-e nsr -l root -P %s -I -u -s %d -t 4 ssh://%s",
 		"./data/ssh_root_pass_"+scan, pi.port, t.host)
 
-	c.args = str.Split(argsS, " ")
+	args := str.Split(argsS, " ")
 
-	runCmd(t.host, pi.portS, &c)
+	c := t.prepareCmd(cname, "hydra", pi.portS, args)
+	t.runCmd(c)
 	wg.Done()
 }
 
 func (t *targetT) sshBruteUser(scan string, pi portInfoT, wg *sync.WaitGroup) {
-	var c cmdT
-	c.name = fmt.Sprintf("brute_user_%s", scan)
-	c.bin = "hydra"
+	cname := fmt.Sprintf("brute_user_%s_%d", scan, pi.port)
 
 	var argsS string
 	if scan == "1" {
@@ -58,8 +54,9 @@ func (t *targetT) sshBruteUser(scan string, pi portInfoT, wg *sync.WaitGroup) {
 		"./data/ssh_user", "./data/ssh_user_pass_"+scan,
 		pi.port, t.host)
 
-	c.args = str.Split(argsS, " ")
+	args := str.Split(argsS, " ")
 
-	runCmd(t.host, pi.portS, &c)
+	c := t.prepareCmd(cname, "hydra", pi.portS, args)
+	t.runCmd(c)
 	wg.Done()
 }

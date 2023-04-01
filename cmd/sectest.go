@@ -18,6 +18,7 @@ import (
 	"sectest/nmap"
 )
 
+// cmds maps command names to cmdT structs
 type targetT struct {
 	host string
 	tcp  map[int]portInfoT
@@ -38,16 +39,24 @@ type targetT struct {
 	wg             *sync.WaitGroup
 }
 
-// status: "ok", "error" or "done"
+// status: "ok" or "error"
 type cmdT struct {
 	name           string
 	bin            string
 	args           []string
 	exitCodeIgnore bool
-	status         string
-	start          time.Time
-	runTime        time.Duration
-	nmapScan       nmap.HostT
+
+	portS   string
+	fileOut string
+	jsonOut string
+
+	nmapScan nmap.HostT
+
+	start   time.Time
+	runTime time.Duration
+	status  string
+	done    bool
+	resDone bool
 }
 
 type portInfoT struct {
@@ -106,6 +115,10 @@ func main() {
 
 	c = t.makeNmapCmd("udp_fast", "--top-ports 50 -sUV")
 	go t.nmapRun(c)
+
+	// polling goroutine to grab results as soon as they're found
+	stopResPoll := make(chan bool)
+	go t.pollResults(stopResPoll)
 
 	// polling loop to start testing new ports that appear from nmap scans
 	for {
@@ -196,8 +209,10 @@ func main() {
 	}
 
 	t.wg.Wait()
-	t.runTime = time.Since(t.start)
+	stopResPoll <- true
+	print("waiting for the result gathering process to stop...\n")
 
+	t.runTime = time.Since(t.start)
 	print("all done in %s\n", t.runTime.Round(time.Second))
 }
 

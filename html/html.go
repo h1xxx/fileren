@@ -21,6 +21,7 @@ type ElementT struct {
 // LoginType is either "user" or "email"
 type LoginParamsT struct {
 	Loc       string
+	Action    string
 	Method    string
 	LoginType string
 	Login     string
@@ -91,6 +92,10 @@ func extractLoginFields(el ElementT, form *LoginParamsT) {
 	for key, val := range el.Keys {
 		if key == "method" {
 			form.Method = str.ToLower(val)
+		}
+
+		if key == "action" {
+			form.Action = val
 		}
 
 		if key == "type" && val == "email" && isUserElement(el) {
@@ -218,8 +223,8 @@ func DumpHtmlForms(path, outDir, formsFile, loginFile string) error {
 }
 
 func DumpLoginParams(p LoginParamsT, fd *os.File) {
-	fmt.Fprintf(fd, "%s\t%s\t%s\t%s\t%s\n",
-		p.Loc, p.Method, p.LoginType, p.Login, p.Pass)
+	fmt.Fprintf(fd, "%s\t%s\t%s\t%s\t%s\t%s\n",
+		p.Loc, p.Action, p.Method, p.LoginType, p.Login, p.Pass)
 }
 
 func ParseLoginParams(file string) ([]LoginParamsT, error) {
@@ -234,17 +239,18 @@ func ParseLoginParams(file string) ([]LoginParamsT, error) {
 	input := bufio.NewScanner(fd)
 	for input.Scan() {
 		fields := str.Split(input.Text(), "\t")
-		if len(fields) != 5 {
+		if len(fields) != 6 {
 			return paramsList, fmt.Errorf("wtf")
 		}
 
 		var params LoginParamsT
 
 		params.Loc = fields[0]
-		params.Method = fields[1]
-		params.LoginType = fields[2]
-		params.Login = fields[3]
-		params.Pass = fields[4]
+		params.Action = fields[1]
+		params.Method = fields[2]
+		params.LoginType = fields[3]
+		params.Login = fields[4]
+		params.Pass = fields[5]
 
 		paramsList = append(paramsList, params)
 	}

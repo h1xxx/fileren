@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"sync"
 )
 
@@ -16,8 +15,7 @@ func (t *targetT) testHttp(pi *portInfoT) {
 	httpWg.Wait()
 
 	for _, params := range pi.loginParams {
-		fmt.Println(params)
-		//go t.ffufUrlEnum(t.host, pi, httpWg)
+		t.ffufLogin(t.host, pi, params)
 	}
 
 	httpWg.Add(1)

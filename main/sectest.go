@@ -127,31 +127,38 @@ func main() {
 			switch pi.service {
 			case "ftp":
 				t.wg.Add(1)
+				pi := pi
 				pi.started = true
-				go t.testFtp(pi)
 				t.tcp[p] = pi
+				go t.testFtp(pi)
 			case "ssh":
 				t.wg.Add(1)
+				pi := pi
 				pi.started = true
-				go t.testSsh(pi)
 				t.tcp[p] = pi
+				go t.testSsh(pi)
 			case "http":
 				if !t.httpInProgress {
 					t.httpInProgress = true
-					pi.started = true
 					t.wg.Add(1)
-					go t.testHttp(&pi)
+					pi := pi
+					pi.started = true
 					t.tcp[p] = pi
+					go t.testHttp(&pi)
 				}
 			case "http-proxy":
 				if !t.httpInProgress {
 					t.httpInProgress = true
 					t.wg.Add(1)
+					pi := pi
 					pi.started = true
-					go t.testHttp(&pi)
 					t.tcp[p] = pi
+					go t.testHttp(&pi)
 				}
 			default:
+				pi := pi
+				pi.started = true
+				t.tcp[p] = pi
 				msg := "ignoring %s on tcp port %d\n"
 				print(msg, pi.service, p)
 			}
@@ -167,10 +174,11 @@ func main() {
 			default:
 				msg := "ignoring %s on udp port %d\n"
 				print(msg, pi.service, p)
-			}
 
-			pi.started = true
-			t.udp[p] = pi
+				pi := pi
+				pi.started = true
+				t.udp[p] = pi
+			}
 		}
 
 		// slow down the loop and exit if all ports are being tested

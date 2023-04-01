@@ -16,7 +16,7 @@ type empty struct {
 	empty bool
 }
 
-func GetUrls(file string) ([]FfufResult, error) {
+func GetResults(file string) ([]FfufResult, error) {
 	var ffufOut FfufOut
 
 	data, err := ioutil.ReadFile(file)
@@ -89,4 +89,27 @@ func locIsFile(loc string) bool {
 		return true
 	}
 	return false
+}
+
+func GetRespSize(file string) (int, error) {
+	ffufRes, err := GetResults(file)
+	if err != nil {
+		return 0, err
+	}
+
+	lenMap := make(map[int]int)
+	for _, res := range ffufRes {
+		lenMap[res.Length] += 1
+	}
+
+	var size int
+	for k, v := range lenMap {
+		if v != len(ffufRes) {
+			return 0, fmt.Errorf("inconclusive results")
+		} else {
+			size = k
+		}
+	}
+
+	return size, nil
 }

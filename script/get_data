@@ -154,4 +154,22 @@ cat ../data/http_url_enum \
   | grep -v '^\.\.$' \
   > ../data/http_url_enum_rec_file
 
+# users for web login testing
+cat << EOF > ../data/weblogin_user
+a adm admin administrator anonymous default ftp ftpuser guest httpadmin info
+localadmin none root supervisor test uploader user user1 webserver
+EOF
+sed -i 's| |\n|g' ../data/weblogin_user
+
+# passwords for web login testing
+head -n 3000 "${LIST_DIR}/Passwords/xato-net-10-million-passwords-10000.txt" \
+  > ../data/weblogin_pass
+
+# test data for fuff fuzzing
+> ../data/ffuf_testlist
+for i in $(seq 0 15); do
+  printf "x%x\n" $i >> ../data/ffuf_testlist
+done
+
 echo done.
+

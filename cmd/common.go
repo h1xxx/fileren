@@ -146,7 +146,7 @@ func (t *targetT) printInfo() {
 			fmt.Printf("runtime:\t%s\n",
 				c.runTime.Round(time.Second))
 		}
-		if str.Contains(c.name, "_fast") {
+		if str.Contains(c.name, "_init") {
 			nmap.PrHostInfo(c.nmapScan)
 		}
 	}

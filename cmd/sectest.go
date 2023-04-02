@@ -33,8 +33,6 @@ type targetT struct {
 	tcp2Scanned bool
 	udpScanned  bool
 
-	tcpFullStarted bool
-	udpFullStarted bool
 	httpInProgress bool
 	wg             *sync.WaitGroup
 }
@@ -103,18 +101,18 @@ func main() {
 
 	os.MkdirAll(fp.Join(t.host, "nmap"), 0750)
 
-	t.wg.Add(5)
+	t.wg.Add(3)
 
-	c := t.makeNmapCmd("tcp_fast_1", "-p1-10000 -sSV")
-	go t.nmapRun(c)
+	c := t.makeNmapCmd("tcp_init_1", "nmap", "-p1-10000 -sSV")
+	go t.nmapRun(c, nil)
 	time.Sleep(10 * time.Millisecond)
 
-	c = t.makeNmapCmd("tcp_fast_2", "-p10001-65535 -sSV")
-	go t.nmapRun(c)
+	c = t.makeNmapCmd("tcp_init_2", "nmap", "-p10001-65535 -sSV")
+	go t.nmapRun(c, nil)
 	time.Sleep(10 * time.Millisecond)
 
-	c = t.makeNmapCmd("udp_fast", "--top-ports 50 -sUV")
-	go t.nmapRun(c)
+	c = t.makeNmapCmd("udp_init", "nmap", "--top-ports 100 -sUV")
+	go t.nmapRun(c, nil)
 
 	// polling goroutine to grab results as soon as they're found
 	stopResPoll := make(chan bool)
@@ -122,21 +120,7 @@ func main() {
 
 	// polling loop to start testing new ports that appear from nmap scans
 	for {
-		// start tcp full scan only when fast scans are completed
-		if t.tcpScanned && !t.tcpFullStarted {
-			t.tcpFullStarted = true
-			c = t.makeNmapCmd("tcp_full", "-p- -sS -sV -O")
-			go t.nmapRun(c)
-		}
-
-		// start udp full scan only when fast scan is completed
-		if t.udpScanned && !t.udpFullStarted {
-			t.udpFullStarted = true
-			c = t.makeNmapCmd("udp_full", "--top-ports 500 -sUV")
-			go t.nmapRun(c)
-		}
-
-		// search for new tcp ports that appear from nmap fast scans
+		// search for new tcp ports that appear from nmap init scans
 		for p, pi := range t.tcp {
 			if pi.started {
 				continue
@@ -182,7 +166,7 @@ func main() {
 			}
 		}
 
-		// search for new udp ports that appear from nmap fast scans
+		// search for new udp ports that appear from nmap init scans
 		for p, pi := range t.udp {
 			if pi.started {
 				continue
@@ -218,9 +202,7 @@ func main() {
 
 func (t *targetT) allScheduled() bool {
 	if t.portsStarted() && t.tcpScanned && t.udpScanned {
-		if t.tcpFullStarted && t.udpFullStarted {
-			return true
-		}
+		return true
 	}
 	return false
 }

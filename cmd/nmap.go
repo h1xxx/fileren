@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"sync"
 
 	fp "path/filepath"
 	str "strings"
@@ -9,22 +10,15 @@ import (
 	"sectest/nmap"
 )
 
-func (t *targetT) makeNmapCmd(name, argsS string) cmdT {
+func (t *targetT) makeNmapCmd(name, portS, argsS string) cmdT {
 	cname := name
 
 	argsS += " -g53 --open --max-retries 2 --max-scan-delay 11ms"
 	argsS += " --max-rtt-timeout 1250ms --min-rtt-timeout 100ms"
 	argsS += " --initial-rtt-timeout 500ms"
-
-	// make fast scans really fast and limit their lifespan
-	if str.Contains(name, "_fast") {
-		argsS += " --script-timeout 3 --host-timeout 30m"
-	} else {
-		argsS += " --script-timeout 3m --host-timeout 90m"
-	}
+	argsS += " --script-timeout 3m --host-timeout 60m"
 
 	argsS += " -oX " + fp.Join(t.host, "nmap", name+".xml")
-	argsS += " -oG " + fp.Join(t.host, "nmap", name+".grep")
 	argsS += " " + t.host
 
 	args := str.Split(argsS, " ")
@@ -33,24 +27,24 @@ func (t *targetT) makeNmapCmd(name, argsS string) cmdT {
 	scripts += "not (*robtex* or *brute* or ssh-run or http-slowloris or "
 	scripts += "http-comments-displayer or targets-asn or fcrdns)"
 
-	if str.Contains(name, "_full") {
+	if !str.Contains(name, "_init") {
 		args = append(args, "--version-all")
 		args = append(args, "--script")
 		args = append(args, scripts)
+
+		args = append(args, "--script-args")
+		args = append(args, "http.useragent="+getRandomUA())
+
+		args = append(args, "--script-args")
+		args = append(args, "httpspider.maxpagecount=-1")
 	}
 
-	args = append(args, "--script-args")
-	args = append(args, "http.useragent="+getRandomUA())
-
-	args = append(args, "--script-args")
-	args = append(args, "httpspider.maxpagecount=-1")
-
-	c := t.prepareCmd(cname, "nmap", "nmap", args)
+	c := t.prepareCmd(cname, "nmap", portS, args)
 
 	return c
 }
 
-func (t *targetT) nmapRun(c cmdT) {
+func (t *targetT) nmapRun(c cmdT, localWg *sync.WaitGroup) {
 	t.runCmd(c)
 
 	nmapScan, err := nmap.ReadScan(fp.Join(t.host, "nmap", c.name+".xml"))
@@ -69,11 +63,11 @@ func (t *targetT) nmapRun(c cmdT) {
 	t.getTestPorts(&c)
 
 	switch c.name {
-	case "tcp_fast_1":
+	case "tcp_init_1":
 		t.tcp1Scanned = true
-	case "tcp_fast_2":
+	case "tcp_init_2":
 		t.tcp2Scanned = true
-	case "udp_fast":
+	case "udp_init":
 		t.udpScanned = true
 	}
 
@@ -83,12 +77,16 @@ func (t *targetT) nmapRun(c cmdT) {
 
 	MU.Unlock()
 
-	t.wg.Done()
+	if localWg == nil {
+		t.wg.Done()
+	} else {
+		localWg.Done()
+	}
 }
 
 func (t *targetT) getTestPorts(c *cmdT) {
 	switch c.name {
-	case "tcp_fast_1", "tcp_fast_2":
+	case "tcp_init_1", "tcp_init_2":
 		for _, p := range c.nmapScan.Ports {
 			if p.State.State != "open" {
 				continue
@@ -106,7 +104,7 @@ func (t *targetT) getTestPorts(c *cmdT) {
 			t.tcp[p.PortId] = pi
 		}
 
-	case "udp_fast":
+	case "udp_init":
 		for _, p := range c.nmapScan.Ports {
 			if p.State.State != "open" {
 				continue

@@ -13,7 +13,12 @@ func (t *targetT) testFtp(pi portInfoT) {
 	print("testing %s on tcp port %d...\n", pi.service, pi.port)
 
 	wg := &sync.WaitGroup{}
-	wg.Add(2)
+	wg.Add(3)
+
+	nmapArgs := fmt.Sprintf("-p%d -sS -sV", pi.port)
+	nmapCmd := t.makeNmapCmd("nmap_"+pi.portS, pi.portS, nmapArgs)
+
+	go t.nmapRun(nmapCmd, wg)
 	go t.ftpMirror("anonymous", "anonymous", pi, wg)
 	go t.ftpBrute("1", pi, wg)
 	wg.Wait()

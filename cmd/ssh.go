@@ -10,22 +10,26 @@ import (
 func (t *targetT) testSsh(pi portInfoT) {
 	print("testing %s on tcp port %d...\n", pi.service, pi.port)
 
-	sshWg := &sync.WaitGroup{}
+	wg := &sync.WaitGroup{}
+	wg.Add(3)
 
-	sshWg.Add(2)
-	go t.sshBruteRoot("1", pi, sshWg)
-	go t.sshBruteUser("1", pi, sshWg)
-	sshWg.Wait()
+	nmapArgs := fmt.Sprintf("-p%d -sS -sV", pi.port)
+	nmapCmd := t.makeNmapCmd("nmap_"+pi.portS, pi.portS, nmapArgs)
 
-	sshWg.Add(2)
-	go t.sshBruteRoot("2", pi, sshWg)
-	go t.sshBruteUser("2", pi, sshWg)
-	sshWg.Wait()
+	go t.nmapRun(nmapCmd, wg)
+	go t.sshBruteRoot("1", pi, wg)
+	go t.sshBruteUser("1", pi, wg)
+	wg.Wait()
 
-	sshWg.Add(2)
-	go t.sshBruteRoot("3", pi, sshWg)
-	go t.sshBruteUser("3", pi, sshWg)
-	sshWg.Wait()
+	wg.Add(2)
+	go t.sshBruteRoot("2", pi, wg)
+	go t.sshBruteUser("2", pi, wg)
+	wg.Wait()
+
+	wg.Add(2)
+	go t.sshBruteRoot("3", pi, wg)
+	go t.sshBruteUser("3", pi, wg)
+	wg.Wait()
 
 	print("finished testing %s on tcp port %d\n", pi.service, pi.port)
 	t.wg.Done()

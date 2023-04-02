@@ -45,8 +45,12 @@ func (t *targetT) wgetGet(host string, pi *portInfoT, wg *sync.WaitGroup) {
 
 	// extract forms and login parameters
 	outDir := fmt.Sprintf("%s/%s", t.host, pi.portS)
-	html.DumpHtmlForms(mirrorDir, outDir,
+	err := html.DumpHtmlForms(mirrorDir, outDir,
 		"forms_"+host, "login_params_"+host)
+	if err != nil {
+		msg := "error in %s: can't dump html forms - %v\n"
+		print(msg, c.name, err)
+	}
 
 	loginParams, err := html.ParseLoginParams(
 		outDir + "/login_params_" + host)

@@ -24,6 +24,7 @@ type targetT struct {
 	tcp  map[int]portInfoT
 	udp  map[int]portInfoT
 	cmds map[string]cmdT
+	info map[infoKeyT]string
 
 	start   time.Time
 	runTime time.Duration
@@ -53,6 +54,7 @@ type cmdT struct {
 	start   time.Time
 	runTime time.Duration
 	status  string
+	started bool
 	done    bool
 	resDone bool
 }
@@ -69,6 +71,11 @@ type portInfoT struct {
 	ver     string
 
 	loginParams []html.LoginParamsT
+}
+
+type infoKeyT struct {
+	name  string
+	portS string
 }
 
 type argsT struct {
@@ -96,6 +103,7 @@ func main() {
 	t.tcp = make(map[int]portInfoT)
 	t.udp = make(map[int]portInfoT)
 	t.cmds = make(map[string]cmdT)
+	t.info = make(map[infoKeyT]string)
 
 	t.wg = &sync.WaitGroup{}
 
@@ -115,8 +123,10 @@ func main() {
 	go t.nmapRun(c, nil)
 
 	// polling goroutine to grab results as soon as they're found
+	wgPoll := &sync.WaitGroup{}
+	wgPoll.Add(1)
 	stopResPoll := make(chan bool)
-	go t.pollResults(stopResPoll)
+	go t.pollResults(stopResPoll, wgPoll)
 
 	// polling loop to start testing new ports that appear from nmap scans
 	for {
@@ -194,7 +204,7 @@ func main() {
 
 	t.wg.Wait()
 	stopResPoll <- true
-	print("waiting for the result gathering process to stop...\n")
+	wgPoll.Wait()
 
 	t.runTime = time.Since(t.start)
 	print("all done in %s\n", t.runTime.Round(time.Second))

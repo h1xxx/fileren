@@ -2,6 +2,7 @@ package html
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -186,6 +187,11 @@ func isPassVal(val string) bool {
 }
 
 func DumpHtmlForms(path, outDir, formsFile, loginFile string) error {
+	_, err := os.Stat(path)
+	if errors.Is(err, os.ErrNotExist) {
+		return fmt.Errorf("dir %s doesn't exists", path)
+	}
+
 	files, err := walkDir(path)
 	if err != nil {
 		return err

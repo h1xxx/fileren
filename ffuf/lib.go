@@ -29,6 +29,11 @@ func GetResults(file string) ([]FfufResult, error) {
 		return ffufOut.Results, err
 	}
 
+	for i, res := range ffufOut.Results {
+		_, loc, _ := str.Cut(res.Url, res.Host)
+		ffufOut.Results[i].Loc = loc
+	}
+
 	return ffufOut.Results, nil
 }
 

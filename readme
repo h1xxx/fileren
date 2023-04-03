@@ -1,0 +1,58 @@
+sectest
+=======
+
+A bunch of golang glue and duct tape to do an invasive security scan.
+
+The goal is to automate target's initial recon, perform common enumerations,
+and do automated dictionary attacks for every service available.
+
+Pretty heavy on the network due to many concurrent scans, but optimzied for the
+openvpn connection to not to do replays (tested on hackthebox openvpn).
+
+Work in progress - expect breaking changes and new features.
+
+
+
+build and run
+=============
+
+make
+./bin/sectest -t <target ip>
+
+
+
+features
+========
+
+ssh
+---
+
+- dictionary attack for common logins and passwords (hydra)
+
+ftp
+---
+
+- dict attack for common logins and passwords (hydra)
+- mirroring of ftp data for anonymous user and users found during the test
+  (lftp)
+
+http
+----
+
+- find tech used (whatweb, nmap scripts)
+- extract site specific keywords (cewl)
+- enumerate common web locations with and w/o authentication (ffuf)
+- detect web forms, including login forms (golang.org/x/net/html)
+- dict attack on login forms (ffuf)
+- sql injections on found GET and POST parameters in web forms (sqlmap)
+- mirror the site with and w/o authentication (wget)
+- enumerate api endpoints (ffuf)
+- enumerate vhosts (ffuf)
+
+vulnerability scans
+-------------------
+
+- nmap vulners script
+- nuclei
+- openvas nasl scripts
+

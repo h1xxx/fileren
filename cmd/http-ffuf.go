@@ -3,6 +3,8 @@ package main
 import (
 	"errors"
 	"fmt"
+	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"sync"
@@ -24,7 +26,7 @@ func (t *targetT) ffufUrlEnum(host string, pi *portInfoT, wg *sync.WaitGroup) {
 		sslSuffix = "s"
 	}
 
-	formatS := "-se -noninteractive -r -t 64 -r -o %s "
+	formatS := "-se -noninteractive -r -t 60 -r -o %s "
 	formatS += "-w %s:FUZZ -u http%s://%s:%d/FUZZ"
 	argsS := fmt.Sprintf(formatS, c.jsonOut,
 		wordlist, sslSuffix, host, pi.port)
@@ -77,7 +79,7 @@ func (t *targetT) ffufUrlEnumRec(host, l string, pi *portInfoT, wg *sync.WaitGro
 		sslSuffix = "s"
 	}
 
-	formatS := "-se -noninteractive -r -t 64 -r -o %s "
+	formatS := "-se -noninteractive -r -t 60 -r -o %s "
 	formatS += "-fc 401,403 "
 	formatS += "-w %s:DIR -w %s:FILE -u http%s://%s:%d/DIR/FILE"
 	argsS := fmt.Sprintf(formatS, c.jsonOut,
@@ -110,15 +112,16 @@ func (t *targetT) ffufLogin(host string, pi *portInfoT, form html.LoginParamsT) 
 	if pi.tunnel == "ssl" {
 		sslSuffix = "s"
 	}
+	targetUrl := fmt.Sprintf("http%s://%s:%d/%s",
+		sslSuffix, host, pi.port, form.Action)
 
 	errRespSize := 696969696969696969
 
-	formatS := "-se -noninteractive -r -t 64 -r -o %s "
+	formatS := "-se -noninteractive -r -t 60 -r -o %s "
+	formatS += "-u %s "
 	formatS += "-w data/ffuf_testlist:USER -w data/ffuf_testlist:PASS "
-	formatS += "-u http%s://%s:%d/%s "
 	formatS += "-X POST -d %s=USER&%s=PASS -fs %d"
-	argsS := fmt.Sprintf(formatS, c.jsonOut,
-		sslSuffix, host, pi.port, form.Action,
+	argsS := fmt.Sprintf(formatS, c.jsonOut, targetUrl,
 		form.Login, form.Pass, errRespSize)
 
 	args := str.Split(argsS, " ")
@@ -165,4 +168,47 @@ func (t *targetT) ffufLogin(host string, pi *portInfoT, form html.LoginParamsT) 
 		msg := "error in %s: can't get clean ffuf output - %v\n"
 		print(msg, c.name, err)
 	}
+
+	ffufRes, err := ffuf.GetResults(c.jsonOut)
+	errExit(err)
+
+	userCredsMap := make(map[string]credsT)
+	for _, res := range ffufRes {
+		var creds credsT
+		creds.loc = res.Loc
+		creds.user = res.Input.USER
+		creds.pass = res.Input.PASS
+		userCredsMap[creds.user] = creds
+	}
+
+	for _, creds := range userCredsMap {
+		creds.cookie = getCookie(targetUrl, creds)
+		t.auth["weblogin"] = append(t.auth["weblogin"], creds)
+	}
+}
+
+func getCookie(targetUrl string, creds credsT) string {
+	postParams := url.Values{}
+	postParams.Set("username", "user1")
+	client := &http.Client{}
+	req, err := http.NewRequest("POST", targetUrl,
+		str.NewReader(postParams.Encode()))
+	if err != nil {
+		return ""
+	}
+	req.Header.Set("Content-Type",
+		"application/x-www-form-urlencoded; param=value")
+	resp, err := client.Do(req)
+	if err != nil {
+		return ""
+	}
+
+	for _, cookie := range resp.Cookies() {
+		switch cookie.Name {
+		case "PHPSESSID":
+			return cookie.String()
+		}
+	}
+
+	return ""
 }

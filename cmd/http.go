@@ -26,6 +26,21 @@ func (t *targetT) testHttp(pi *portInfoT) {
 		t.ffufLogin(t.host, pi, params)
 	}
 
+	print("________ %+v\n", t.auth)
+	print("%+v\n", t.auth["weblogin"])
+
+	/*
+		// grab first available credentials and do also authenticated scans
+		if gotLogin {
+			ffufRes, _ := ffuf.GetResults(file)
+			for _, res := range ffufRes {
+				print("%s %s %s\n", res.Loc,
+				res.Input.USER,
+				res.Input.PASS)
+			}
+		}
+	*/
+
 	// todo: this doesn't seem to be efficient, optimize
 	/*
 		wg.Add(1)

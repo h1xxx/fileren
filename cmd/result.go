@@ -40,10 +40,6 @@ func (t *targetT) pollResults(stop chan bool, wg *sync.WaitGroup) {
 
 			case str.HasPrefix(cmd.name, "weblogin"):
 				text := t.webloginInfo(cmd.jsonOut)
-				if len(t.info[key]) != len(text) {
-					print("[!]\tcredentials found in %s\n",
-						cmd.name)
-				}
 				t.info[key] = text
 			}
 

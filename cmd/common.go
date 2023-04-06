@@ -105,6 +105,7 @@ func cmdIsDone(outFile string) bool {
 func errInOutFile(outFile string) bool {
 	errStrings := []string{
 		"Receiving spurious errors, exiting.",
+		"Unable to establish SSL connection",
 	}
 
 	var q []string

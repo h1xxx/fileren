@@ -126,7 +126,7 @@ EOF
 sed -i 's| |\n|g' ../data/weblogin_user
 
 # passwords for web login testing
-head -n 3000 "${LIST_DIR}/Passwords/xato-net-10-million-passwords-10000.txt" \
+head -n 2000 "${LIST_DIR}/Passwords/xato-net-10-million-passwords-10000.txt" \
   > ../data/weblogin_pass
 
 # test data for fuff fuzzing
@@ -134,6 +134,75 @@ head -n 3000 "${LIST_DIR}/Passwords/xato-net-10-million-passwords-10000.txt" \
 for i in $(seq 0 15); do
   printf "x%x\n" $i >> ../data/ffuf_testlist
 done
+
+
+# nmap port lists
+# ---------------
+
+# nmap port split is not used currently by sectest, keeping it just in case
+
+sort -r -k3 /usr/share/nmap/nmap-services \
+  | grep -v '^#' \
+  | grep '/tcp	' \
+  | head -n10000 \
+  | sed 's|\t0\..*|\t0.000000|' \
+  > ../data/nmap_servicedb_tcp_init_1
+
+# add missing ports from 1-10000 range
+
+cut -f2 ../data/nmap_servicedb_tcp_init_1 \
+  > ../data/nmap_servicedb_tcp_init_1_tmp
+
+seq -f '%f/tcp' 1 10000 \
+  | sed 's|\.000000||' \
+  > ../data/nmap_servicedb_tcp_init_1_add
+
+grep -vxFf ../data/nmap_servicedb_tcp_init_1_tmp \
+  ../data/nmap_servicedb_tcp_init_1_add \
+    | sed 's|^|custom	|' \
+    | sed 's|$|	0.000000|' \
+    >> ../data/nmap_servicedb_tcp_init_1
+
+# prepare ports for the second tcp init run
+
+cut -f2 ../data/nmap_servicedb_tcp_init_1 \
+  > ../data/nmap_servicedb_tcp_init_1_tmp
+
+seq -f '%f/tcp' 1 65535 \
+  | sed 's|\.000000||' \
+  > ../data/nmap_servicedb_tcp_init_2_tmp
+
+grep -vxFf ../data/nmap_servicedb_tcp_init_1_tmp \
+  ../data/nmap_servicedb_tcp_init_2_tmp \
+    | sed 's|^|custom	|' \
+    | sed 's|$|	0.000000|' \
+    > ../data/nmap_servicedb_tcp_init_2
+
+rm ../data/nmap_servicedb_tcp_init_*_{tmp,add}
+
+# prepare ports for the first udp init run
+
+sort -r -k3 /usr/share/nmap/nmap-services \
+  | grep -v '^#' \
+  | grep '/udp	' \
+  | head -n1000 \
+  | sed 's|\t0\..*|\t0.000000|' \
+  > ../data/nmap_servicedb_udp_init_1 || :
+
+# prepare ports for the second udp init run
+
+sort -r -k3 /usr/share/nmap/nmap-services \
+  | grep -v '^#' \
+  | grep '/udp	' \
+  | head -n11000 \
+  | sed 's|\t0\..*|\t0.000000|' \
+  > ../data/nmap_servicedb_udp_init_2_tmp || :
+
+grep -vxFf ../data/nmap_servicedb_udp_init_1 \
+  ../data/nmap_servicedb_udp_init_2_tmp \
+    > ../data/nmap_servicedb_udp_init_2
+
+rm ../data/nmap_servicedb_udp_init_*_tmp
 
 echo done.
 

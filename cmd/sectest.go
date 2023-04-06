@@ -18,7 +18,15 @@ import (
 	"sectest/nmap"
 )
 
+type credsT struct {
+	loc    string
+	user   string
+	pass   string
+	cookie string
+}
+
 // cmds maps command names to cmdT structs
+// auth possible keys: "ssh, "ftp", "weblogin"
 type targetT struct {
 	host string
 	tcp  map[int]portInfoT
@@ -26,13 +34,13 @@ type targetT struct {
 	cmds map[string]cmdT
 	info map[infoKeyT]string
 
+	auth map[string][]credsT
+
 	start   time.Time
 	runTime time.Duration
 
-	tcpScanned  bool
-	tcp1Scanned bool
-	tcp2Scanned bool
-	udpScanned  bool
+	tcpScanned bool
+	udpScanned bool
 
 	httpInProgress bool
 	wg             *sync.WaitGroup
@@ -104,23 +112,19 @@ func main() {
 	t.udp = make(map[int]portInfoT)
 	t.cmds = make(map[string]cmdT)
 	t.info = make(map[infoKeyT]string)
+	t.auth = make(map[string][]credsT)
 
 	t.wg = &sync.WaitGroup{}
 
 	os.MkdirAll(fp.Join(t.host, "nmap"), 0750)
 
-	t.wg.Add(3)
+	t.wg.Add(2)
 
-	c := t.makeNmapCmd("tcp_init_1", "nmap", "-p1-10000 -sSV")
-	go t.nmapRun(c, nil)
-	time.Sleep(10 * time.Millisecond)
+	c := t.makeNmapCmd("tcp_init", "nmap", "-sSV -T4 -p-")
+	t.nmapRun(c, t.wg)
 
-	c = t.makeNmapCmd("tcp_init_2", "nmap", "-p10001-65535 -sSV")
-	go t.nmapRun(c, nil)
-	time.Sleep(10 * time.Millisecond)
-
-	c = t.makeNmapCmd("udp_init", "nmap", "--top-ports 100 -sUV")
-	go t.nmapRun(c, nil)
+	c = t.makeNmapCmd("udp_init", "nmap", "-sUV --top-ports 1000")
+	go t.nmapRun(c, t.wg)
 
 	// polling goroutine to grab results as soon as they're found
 	wgPoll := &sync.WaitGroup{}

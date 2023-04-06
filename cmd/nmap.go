@@ -13,13 +13,13 @@ import (
 func (t *targetT) makeNmapCmd(name, portS, argsS string) cmdT {
 	cname := name
 
-	argsS += " -g53 --open --max-retries 2 --max-scan-delay 11ms"
-	argsS += " --max-rtt-timeout 1250ms --min-rtt-timeout 100ms"
-	argsS += " --initial-rtt-timeout 500ms"
-	argsS += " --script-timeout 3m --host-timeout 60m"
-
+	argsS += " -g53 --open --max-retries 1 -v"
+	argsS += " --script-timeout 1m --host-timeout 60m"
 	argsS += " -oX " + fp.Join(t.host, "nmap", name+".xml")
-	argsS += " " + t.host
+
+	if name == "udp_init" {
+		argsS += " --version-intensity 0"
+	}
 
 	args := str.Split(argsS, " ")
 
@@ -39,12 +39,13 @@ func (t *targetT) makeNmapCmd(name, portS, argsS string) cmdT {
 		args = append(args, "httpspider.maxpagecount=-1")
 	}
 
+	args = append(args, t.host)
 	c := t.prepareCmd(cname, "nmap", portS, args)
 
 	return c
 }
 
-func (t *targetT) nmapRun(c cmdT, localWg *sync.WaitGroup) {
+func (t *targetT) nmapRun(c cmdT, wg *sync.WaitGroup) {
 	t.runCmd(c)
 
 	nmapScan, err := nmap.ReadScan(fp.Join(t.host, "nmap", c.name+".xml"))
@@ -63,30 +64,20 @@ func (t *targetT) nmapRun(c cmdT, localWg *sync.WaitGroup) {
 	t.getTestPorts(&c)
 
 	switch c.name {
-	case "tcp_init_1":
-		t.tcp1Scanned = true
-	case "tcp_init_2":
-		t.tcp2Scanned = true
+	case "tcp_init":
+		t.tcpScanned = true
 	case "udp_init":
 		t.udpScanned = true
 	}
 
-	if t.tcp1Scanned && t.tcp2Scanned {
-		t.tcpScanned = true
-	}
-
 	MU.Unlock()
 
-	if localWg == nil {
-		t.wg.Done()
-	} else {
-		localWg.Done()
-	}
+	wg.Done()
 }
 
 func (t *targetT) getTestPorts(c *cmdT) {
 	switch c.name {
-	case "tcp_init_1", "tcp_init_2":
+	case "tcp_init":
 		for _, p := range c.nmapScan.Ports {
 			if p.State.State != "open" {
 				continue

@@ -7,7 +7,7 @@ The goal is to automate target's initial recon, perform common enumerations,
 and do automated dictionary attacks for every service available.
 
 Pretty heavy on the network due to many concurrent scans, but optimzied for the
-openvpn connection to not to do replays (tested on hackthebox openvpn).
+hackthebox openvpn connection to not to sweat. So not *that* heavy I guess.
 
 Work in progress - expect breaking changes and new features.
 

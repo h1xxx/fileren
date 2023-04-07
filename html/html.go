@@ -280,11 +280,13 @@ func logElement(n *html.Node) bool {
 		return false
 	}
 
+	// mostly 'form' and 'input' should be logged, but you never know...
 	nopeAtomList := []string{"br", "html", "head", "meta", "title", "link",
 		"style", "body", "h1", "h2", "h3", "h4", "h5", "label", "div",
 		"a", "b", "c", "d", "e", "span", "p", "script", "tr", "td", "",
 		"tbody", "table", "li", "ul", "noscript", "img", "footer",
-		"strong", "header", "nav", "button", "section", "main"}
+		"strong", "header", "nav", "button", "section", "main",
+		"center"}
 
 	for _, nope := range nopeAtomList {
 		if n.DataAtom.String() == nope {
@@ -311,7 +313,7 @@ func logAttr(key, val string) bool {
 		"autofocus", "size", "tabindex", "required", "autocomplete",
 		"onblur", "onkeyup", "onmouseover", "accesskey", "onclick",
 		"onmouseout", "onfocus", "aria-invalid", "aria-required",
-		"aria-label", "accept-charset"}
+		"aria-label", "accept-charset", "cols", "columns", "rows"}
 
 	for _, nope := range nopeKeyList {
 		if key == nope {

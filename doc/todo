@@ -1,6 +1,9 @@
 http
 ====
 
+add locations from url_enum to wget
+find "hidden" (w/o links) files in mirror
+
 add https to ffuf
 Receiving spurious errors, exiting
 if 80 443 are available check if 80 is a separate site, a redir or are the same

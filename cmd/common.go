@@ -188,7 +188,6 @@ func getQuotedArgs(args []string) string {
 		sep = " "
 	}
 
-	print("aaaa %s\n", quotedArgs)
 	return quotedArgs
 }
 

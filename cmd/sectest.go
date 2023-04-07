@@ -90,26 +90,28 @@ type infoKeyT struct {
 }
 
 type argsT struct {
-	host    *string
-	domains *string
+	host      *string
+	skipPorts *string
 }
 
 var MU = &sync.Mutex{}
-var args argsT
+var ARGS argsT
 
 func init() {
-	args.host = flag.String("t", "", "target host (ip or domain)")
-	args.domains = flag.String("d", "", "domains for web enumaration")
+	ARGS.host = flag.String("t", "", "target host (ip or domain)")
+
+	msg := "ports to skip, e.g '80t' or '22t,443t,53u'"
+	ARGS.skipPorts = flag.String("s", "", msg)
 }
 
 func main() {
 	flag.Parse()
-	if *args.host == "" {
+	if *ARGS.host == "" {
 		errExit(fmt.Errorf("target host parameter missing (-h)"))
 	}
 
 	var t targetT
-	t.host = *args.host
+	t.host = *ARGS.host
 	t.start = time.Now()
 	t.tcp = make(map[int]portInfoT)
 	t.udp = make(map[int]portInfoT)

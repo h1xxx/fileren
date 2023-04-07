@@ -76,6 +76,13 @@ func (t *targetT) nmapRun(c cmdT, wg *sync.WaitGroup) {
 }
 
 func (t *targetT) getTestPorts(c *cmdT) {
+	skipPorts := make(map[string]bool)
+	skipFields := str.Split(*ARGS.skipPorts, ",")
+
+	for _, port := range skipFields {
+		skipPorts[port] = true
+	}
+
 	switch c.name {
 	case "tcp_init":
 		for _, p := range c.nmapScan.Ports {
@@ -92,7 +99,12 @@ func (t *targetT) getTestPorts(c *cmdT) {
 			pi.product = p.Service.Product
 			pi.ver = p.Service.Ver
 
-			t.tcp[p.PortId] = pi
+			if skipPorts[pi.portS] {
+				fmt.Printf("skipping port %s\n", pi.portS)
+				delete(t.tcp, p.PortId)
+			} else {
+				t.tcp[p.PortId] = pi
+			}
 		}
 
 	case "udp_init":
@@ -109,7 +121,12 @@ func (t *targetT) getTestPorts(c *cmdT) {
 			pi.product = p.Service.Product
 			pi.ver = p.Service.Ver
 
-			t.udp[p.PortId] = pi
+			if skipPorts[pi.portS] {
+				fmt.Printf("skipping port %s\n", pi.portS)
+				delete(t.tcp, p.PortId)
+			} else {
+				t.udp[p.PortId] = pi
+			}
 		}
 	}
 }

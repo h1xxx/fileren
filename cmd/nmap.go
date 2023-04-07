@@ -123,7 +123,7 @@ func (t *targetT) getTestPorts(c *cmdT) {
 
 			if skipPorts[pi.portS] {
 				fmt.Printf("skipping port %s\n", pi.portS)
-				delete(t.tcp, p.PortId)
+				delete(t.udp, p.PortId)
 			} else {
 				t.udp[p.PortId] = pi
 			}

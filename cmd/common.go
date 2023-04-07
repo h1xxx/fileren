@@ -60,7 +60,7 @@ func (t *targetT) runCmd(c cmdT) {
 	errExit(err)
 	defer fd.Close()
 
-	fmt.Fprintf(fd, "sectest cmd: %s %s\n", c.bin, str.Join(c.args, " "))
+	fmt.Fprintf(fd, "sectest cmd: %s %s\n", c.bin, getQuotedArgs(c.args))
 	fmt.Fprintf(fd, "%s\n", str.Repeat("-", 79))
 
 	cmd := exec.Command(c.bin, c.args...)
@@ -169,6 +169,42 @@ func getRandomUA() string {
 	i := rand.Intn(len(lines))
 
 	return lines[i]
+}
+
+func getQuotedArgs(args []string) string {
+	var quotedArgs, sep string
+
+	for _, a := range args {
+		quoteChar := "'"
+		if str.Contains(a, "'") {
+			quoteChar = "\""
+		}
+
+		if stringNeedsQuote(a) {
+			quotedArgs += sep + quoteChar + a + quoteChar
+		} else {
+			quotedArgs += sep + a
+		}
+		sep = " "
+	}
+
+	print("aaaa %s\n", quotedArgs)
+	return quotedArgs
+}
+
+func stringNeedsQuote(s string) bool {
+	toQuoteChars := []string{
+		" ", ";", "'", "\"", "`",
+		"(", ")", "[", "]", "{", "}",
+		"\\", "<", ">", "&"}
+
+	for _, c := range toQuoteChars {
+		if str.Contains(s, c) {
+			return true
+		}
+	}
+
+	return false
 }
 
 func print(format string, a ...any) {

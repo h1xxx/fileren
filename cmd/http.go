@@ -17,29 +17,24 @@ func (t *targetT) testHttp(pi *portInfoT) {
 	wg := &sync.WaitGroup{}
 	wg.Add(3)
 
-	go t.wgetGet(t.host, pi, wg)
+	go t.wgetGet(t.host, pi, nil, wg)
 	go t.whatWeb(t.host, pi, wg)
-	go t.ffufUrlEnum(t.host, pi, wg)
+	go t.ffufUrlEnum(t.host, pi, nil, wg)
 	wg.Wait()
 
+	// todo: make unique cmd name in case there are more forms
 	for _, params := range pi.loginParams {
 		t.ffufLogin(t.host, pi, params)
 	}
 
-	print("________ %+v\n", t.auth)
-	print("%+v\n", t.auth["weblogin"])
-
-	/*
-		// grab first available credentials and do also authenticated scans
-		if gotLogin {
-			ffufRes, _ := ffuf.GetResults(file)
-			for _, res := range ffufRes {
-				print("%s %s %s\n", res.Loc,
-				res.Input.USER,
-				res.Input.PASS)
-			}
-		}
-	*/
+	// grab first available credentials and do authenticated scans
+	if len(t.auth["weblogin"]) > 0 {
+		creds := t.auth["weblogin"][0]
+		wg.Add(2)
+		go t.wgetGet(t.host, pi, &creds, wg)
+		go t.ffufUrlEnum(t.host, pi, &creds, wg)
+		wg.Wait()
+	}
 
 	// todo: this doesn't seem to be efficient, optimize
 	/*

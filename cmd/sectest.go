@@ -19,10 +19,13 @@ import (
 )
 
 type credsT struct {
-	loc    string
-	user   string
-	pass   string
-	cookie string
+	loc      string
+	redirLoc string
+
+	user     string
+	pass     string
+	postData string
+	cookie   string
 }
 
 // cmds maps command names to cmdT structs

@@ -16,17 +16,17 @@ type empty struct {
 	empty bool
 }
 
-func GetResults(file string) ([]FfufResult, error) {
+func GetResults(file string) ([]FfufResult, FfufConfig, error) {
 	var ffufOut FfufOut
 
 	data, err := ioutil.ReadFile(file)
 	if err != nil {
-		return ffufOut.Results, err
+		return ffufOut.Results, ffufOut.Config, err
 	}
 
 	err = json.Unmarshal(data, &ffufOut)
 	if err != nil {
-		return ffufOut.Results, err
+		return ffufOut.Results, ffufOut.Config, err
 	}
 
 	for i, res := range ffufOut.Results {
@@ -34,7 +34,7 @@ func GetResults(file string) ([]FfufResult, error) {
 		ffufOut.Results[i].Loc = loc
 	}
 
-	return ffufOut.Results, nil
+	return ffufOut.Results, ffufOut.Config, nil
 }
 
 func GetDirs(ffufRes []FfufResult, host, l, dirFile, outF string) error {
@@ -97,7 +97,7 @@ func locIsFile(loc string) bool {
 }
 
 func GetRespSize(file string) (int, error) {
-	ffufRes, err := GetResults(file)
+	ffufRes, _, err := GetResults(file)
 	if err != nil {
 		return 0, err
 	}

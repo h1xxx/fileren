@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"net/url"
 	"os"
 	"os/exec"
 	"sync"
@@ -15,8 +14,13 @@ import (
 	"sectest/html"
 )
 
-func (t *targetT) ffufUrlEnum(host string, pi *portInfoT, wg *sync.WaitGroup) {
+func (t *targetT) ffufUrlEnum(host string, pi *portInfoT, creds *credsT, wg *sync.WaitGroup) {
 	cname := fmt.Sprintf("url_enum_%s_%d", host, pi.port)
+	if creds != nil {
+		cname += "_" + creds.user
+	}
+
+	// init cmd prepare to set the file/dir locations
 	c := t.prepareCmd(cname, "ffuf", pi.portS, []string{})
 
 	wordlist := "./data/http_url_enum"
@@ -35,6 +39,10 @@ func (t *targetT) ffufUrlEnum(host string, pi *portInfoT, wg *sync.WaitGroup) {
 
 	args = append(args, "-H")
 	args = append(args, fmt.Sprintf("User-Agent: %s", getRandomUA()))
+	if creds != nil {
+		args = append(args, "-H")
+		args = append(args, "cookie: "+creds.cookie)
+	}
 
 	c = t.prepareCmd(cname, "ffuf", pi.portS, args)
 	t.runCmd(c)
@@ -51,12 +59,14 @@ func (t *targetT) ffufUrlEnum(host string, pi *portInfoT, wg *sync.WaitGroup) {
 // l - recursion level
 func (t *targetT) ffufUrlEnumRec(host, l string, pi *portInfoT, wg *sync.WaitGroup) {
 	cname := fmt.Sprintf("url_enum_rec_l%s_%s_%d", l, host, pi.port)
+
+	// init cmd prepare to set the file/dir locations
 	c := t.prepareCmd(cname, "ffuf", pi.portS, []string{})
 
 	// read input from ffufUrlEnum
 	file := fmt.Sprintf("%s/%s/url_enum_%s_%d.json",
 		t.host, pi.portS, host, pi.port)
-	ffufRes, err := ffuf.GetResults(file)
+	ffufRes, _, err := ffuf.GetResults(file)
 	if err != nil {
 		msg := "error in %s: can't get ffuf results - %v\n"
 		print(msg, c.name, err)
@@ -106,6 +116,7 @@ func (t *targetT) ffufLogin(host string, pi *portInfoT, form html.LoginParamsT) 
 	cname := fmt.Sprintf("weblogin_%s_%s_%d",
 		str.Replace(form.Action, "/", "-", -1), host, pi.port)
 
+	// init cmd prepare to set the file/dir locations
 	c := t.prepareCmd(cname, "ffuf", pi.portS, []string{})
 
 	var sslSuffix string
@@ -169,7 +180,7 @@ func (t *targetT) ffufLogin(host string, pi *portInfoT, form html.LoginParamsT) 
 		print(msg, c.name, err)
 	}
 
-	ffufRes, err := ffuf.GetResults(c.jsonOut)
+	ffufRes, ffufConfig, err := ffuf.GetResults(c.jsonOut)
 	errExit(err)
 
 	userCredsMap := make(map[string]credsT)
@@ -178,37 +189,54 @@ func (t *targetT) ffufLogin(host string, pi *portInfoT, form html.LoginParamsT) 
 		creds.loc = res.Loc
 		creds.user = res.Input.USER
 		creds.pass = res.Input.PASS
+
+		var data string
+		data = str.Replace(ffufConfig.PostData, "USER", creds.user, -1)
+		data = str.Replace(data, "PASS", creds.pass, -1)
+		creds.postData = data
+
 		userCredsMap[creds.user] = creds
 	}
 
 	for _, creds := range userCredsMap {
-		creds.cookie = getCookie(targetUrl, creds)
+		creds.cookie, creds.redirLoc = getCookie(targetUrl, creds)
 		t.auth["weblogin"] = append(t.auth["weblogin"], creds)
+		if len(creds.cookie) != 0 {
+			print("[!]\tgot cookie for user %s: %s\n",
+				creds.user, creds.cookie)
+		}
 	}
 }
 
-func getCookie(targetUrl string, creds credsT) string {
-	postParams := url.Values{}
-	postParams.Set("username", "user1")
-	client := &http.Client{}
+func getCookie(targetUrl string, creds credsT) (string, string) {
+	var redirLoc, cookie string
+
+	client := &http.Client{
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+	}
 	req, err := http.NewRequest("POST", targetUrl,
-		str.NewReader(postParams.Encode()))
+		str.NewReader(creds.postData))
 	if err != nil {
-		return ""
+		return cookie, redirLoc
 	}
 	req.Header.Set("Content-Type",
 		"application/x-www-form-urlencoded; param=value")
 	resp, err := client.Do(req)
 	if err != nil {
-		return ""
+		return cookie, redirLoc
+	}
+	if resp.StatusCode == 302 {
+		redirLoc = resp.Header["Location"][0]
 	}
 
-	for _, cookie := range resp.Cookies() {
-		switch cookie.Name {
+	for _, c := range resp.Cookies() {
+		switch c.Name {
 		case "PHPSESSID":
-			return cookie.String()
+			cookie = c.String()
 		}
 	}
 
-	return ""
+	return cookie, redirLoc
 }

@@ -12,10 +12,13 @@ import (
 	"sectest/html"
 )
 
-func (t *targetT) wgetGet(host string, pi *portInfoT, wg *sync.WaitGroup) {
+func (t *targetT) wgetGet(host string, pi *portInfoT, creds *credsT, wg *sync.WaitGroup) {
 	cname := fmt.Sprintf("wget_%s_%d", host, pi.port)
+	if creds != nil {
+		cname += "_" + creds.user
+	}
 
-	mirrorDir := fmt.Sprintf("%s/%s/mirror_%s", t.host, pi.portS, host)
+	mirrorDir := fmt.Sprintf("%s/%s/site", t.host, pi.portS)
 
 	var sslSuffix string
 	if pi.tunnel == "ssl" {
@@ -28,14 +31,21 @@ func (t *targetT) wgetGet(host string, pi *portInfoT, wg *sync.WaitGroup) {
 
 	args := str.Split(argsS, " ")
 
+	url := fmt.Sprintf("http%s://%s:%d", sslSuffix, host, pi.port)
+
+	if creds != nil {
+		args = append(args, "--header=cookie: "+creds.cookie)
+		url += "/" + creds.redirLoc
+		mirrorDir += "_" + creds.user
+	}
+
 	args = append(args, "-P")
 	args = append(args, mirrorDir)
 	args = append(args, "-U")
 	args = append(args, getRandomUA())
 	args = append(args, "-D")
 	args = append(args, host)
-	args = append(args, fmt.Sprintf("http%s://%s:%d",
-		sslSuffix, host, pi.port))
+	args = append(args, url)
 
 	c := t.prepareCmd(cname, "wget", pi.portS, args)
 	c.exitCodeIgnore = true
@@ -44,7 +54,11 @@ func (t *targetT) wgetGet(host string, pi *portInfoT, wg *sync.WaitGroup) {
 	wgetSpider(host, c.fileOut)
 
 	// extract forms and login parameters
-	outDir := fmt.Sprintf("%s/%s", t.host, pi.portS)
+	outDir := fmt.Sprintf("%s/%s/site", t.host, pi.portS)
+	if creds != nil {
+		outDir += "_" + creds.user
+	}
+
 	err := html.DumpHtmlForms(mirrorDir, outDir,
 		"forms_"+host, "login_params_"+host)
 	if err != nil {
@@ -58,7 +72,10 @@ func (t *targetT) wgetGet(host string, pi *portInfoT, wg *sync.WaitGroup) {
 		msg := "error in %s: can't get login parameters - %v\n"
 		print(msg, c.name, err)
 	}
-	pi.loginParams = append(pi.loginParams, loginParams...)
+
+	if creds == nil {
+		pi.loginParams = append(pi.loginParams, loginParams...)
+	}
 
 	wg.Done()
 }
@@ -124,7 +141,7 @@ func wgetSpider(host, file string) error {
 			urlI.mime = mime
 
 		case str.HasPrefix(line, "Saving to: "):
-			_, loc, _ := str.Cut(line, "mirror_"+host+"/")
+			_, loc, _ := str.Cut(line, "site/")
 			loc = str.Trim(loc, "’")
 			if !str.HasSuffix(urlI.url, loc) {
 				_, loc, _ = str.Cut(loc, "/")
@@ -145,7 +162,7 @@ func wgetSpider(host, file string) error {
 			urlI.code, urlI.size, urlI.mime, urlI.url)
 	}
 
-	file = str.Replace(file, "wget_", "spider_", 1)
+	file = str.Replace(file, "wget_", "site/spider_", 1)
 	file = str.TrimSuffix(file, ".out")
 	flags := os.O_CREATE | os.O_TRUNC | os.O_WRONLY
 	fd, err = os.OpenFile(file, flags, 0644)

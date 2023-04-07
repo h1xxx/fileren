@@ -3,6 +3,7 @@ package ffuf
 type FfufOut struct {
 	Cli     string       `json:"commandline"`
 	Results []FfufResult `json:"results"`
+	Config  FfufConfig   `json:"config"`
 }
 
 type FfufResult struct {
@@ -29,4 +30,8 @@ type FfufInput struct {
 	FILE string `json:"FILE"`
 	USER string `json:"USER"`
 	PASS string `json:"PASS"`
+}
+
+type FfufConfig struct {
+	PostData string `json:"postdata"`
 }

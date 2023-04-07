@@ -93,7 +93,7 @@ func dumpResultInfo(host string, info map[infoKeyT]string) {
 }
 
 func (t *targetT) urlEnumInfo(file string) string {
-	ffufRes, _ := ffuf.GetResults(file)
+	ffufRes, _, _ := ffuf.GetResults(file)
 	codes := make(map[int]string)
 	for _, res := range ffufRes {
 		cont, _, _ := str.Cut(res.ContentType, ";")
@@ -114,7 +114,7 @@ func (t *targetT) urlEnumInfo(file string) string {
 
 func (t *targetT) webloginInfo(file string) string {
 	var out string
-	ffufRes, _ := ffuf.GetResults(file)
+	ffufRes, _, _ := ffuf.GetResults(file)
 	for _, res := range ffufRes {
 		info := fmt.Sprintf("%-20s %10d  %s:%s\n", res.Loc, res.Length,
 			res.Input.USER, res.Input.PASS)

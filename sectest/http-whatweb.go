@@ -1,4 +1,4 @@
-package main
+package sectest
 
 import (
 	"fmt"
@@ -7,11 +7,11 @@ import (
 	str "strings"
 )
 
-func (t *targetT) whatWeb(host string, pi *portInfoT, wg *sync.WaitGroup) {
-	cname := fmt.Sprintf("whatweb_%s_%d", host, pi.port)
+func (t *TargetT) whatWeb(host string, pi *PortInfoT, wg *sync.WaitGroup) {
+	cname := fmt.Sprintf("whatweb_%s_%d", host, pi.Port)
 
 	var sslSuffix string
-	if pi.tunnel == "ssl" {
+	if pi.Tunnel == "ssl" {
 		sslSuffix = "s"
 	}
 
@@ -23,9 +23,9 @@ func (t *targetT) whatWeb(host string, pi *portInfoT, wg *sync.WaitGroup) {
 	args = append(args, getRandomUA())
 
 	args = append(args, fmt.Sprintf("http%s://%s:%d",
-		sslSuffix, host, pi.port))
+		sslSuffix, host, pi.Port))
 
-	c := t.prepareCmd(cname, "whatweb", pi.portS, args)
+	c := t.prepareCmd(cname, "whatweb", pi.PortS, args)
 	t.runCmd(c)
 	wg.Done()
 }

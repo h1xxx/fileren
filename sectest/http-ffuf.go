@@ -1,4 +1,4 @@
-package main
+package sectest
 
 import (
 	"errors"
@@ -14,26 +14,26 @@ import (
 	"sectest/html"
 )
 
-func (t *targetT) ffufUrlEnum(host string, pi *portInfoT, creds *credsT, wg *sync.WaitGroup) {
-	cname := fmt.Sprintf("url_enum_%s_%d", host, pi.port)
+func (t *TargetT) ffufUrlEnum(host string, pi *PortInfoT, creds *CredsT, wg *sync.WaitGroup) {
+	cname := fmt.Sprintf("url_enum_%s_%d", host, pi.Port)
 	if creds != nil {
 		cname += "_" + creds.user
 	}
 
 	// init cmd prepare to set the file/dir locations
-	c := t.prepareCmd(cname, "ffuf", pi.portS, []string{})
+	c := t.prepareCmd(cname, "ffuf", pi.PortS, []string{})
 
 	wordlist := "./data/http_url_enum"
 
 	var sslSuffix string
-	if pi.tunnel == "ssl" {
+	if pi.Tunnel == "ssl" {
 		sslSuffix = "s"
 	}
 
 	formatS := "-se -noninteractive -r -t 60 -r -o %s "
 	formatS += "-w %s:FUZZ -u http%s://%s:%d/FUZZ"
 	argsS := fmt.Sprintf(formatS, c.jsonOut,
-		wordlist, sslSuffix, host, pi.port)
+		wordlist, sslSuffix, host, pi.Port)
 
 	args := str.Split(argsS, " ")
 
@@ -44,7 +44,7 @@ func (t *targetT) ffufUrlEnum(host string, pi *portInfoT, creds *credsT, wg *syn
 		args = append(args, "cookie: "+creds.cookie)
 	}
 
-	c = t.prepareCmd(cname, "ffuf", pi.portS, args)
+	c = t.prepareCmd(cname, "ffuf", pi.PortS, args)
 	t.runCmd(c)
 
 	err := ffuf.CleanFfuf(c.fileOut)
@@ -57,15 +57,15 @@ func (t *targetT) ffufUrlEnum(host string, pi *portInfoT, creds *credsT, wg *syn
 }
 
 // l - recursion level
-func (t *targetT) ffufUrlEnumRec(host, l string, pi *portInfoT, wg *sync.WaitGroup) {
-	cname := fmt.Sprintf("url_enum_rec_l%s_%s_%d", l, host, pi.port)
+func (t *TargetT) ffufUrlEnumRec(host, l string, pi *PortInfoT, wg *sync.WaitGroup) {
+	cname := fmt.Sprintf("url_enum_rec_l%s_%s_%d", l, host, pi.Port)
 
 	// init cmd prepare to set the file/dir locations
-	c := t.prepareCmd(cname, "ffuf", pi.portS, []string{})
+	c := t.prepareCmd(cname, "ffuf", pi.PortS, []string{})
 
 	// read input from ffufUrlEnum
 	file := fmt.Sprintf("%s/%s/url_enum_%s_%d.json",
-		t.host, pi.portS, host, pi.port)
+		t.Host, pi.PortS, host, pi.Port)
 	ffufRes, _, err := ffuf.GetResults(file)
 	if err != nil {
 		msg := "error in %s: can't get ffuf results - %v\n"
@@ -74,8 +74,8 @@ func (t *targetT) ffufUrlEnumRec(host, l string, pi *portInfoT, wg *sync.WaitGro
 
 	filelist := "./data/http_url_enum_rec_file"
 	dirlist := fmt.Sprintf("%s/%s/url_enum_rec_l%s_%s_%d.dirs",
-		t.host, pi.portS, l, host, pi.port)
-	err = ffuf.GetDirs(ffufRes, t.host, l, "data/http_dir", dirlist)
+		t.Host, pi.PortS, l, host, pi.Port)
+	err = ffuf.GetDirs(ffufRes, t.Host, l, "data/http_dir", dirlist)
 	errExit(err)
 
 	_, err = os.Stat(dirlist)
@@ -85,7 +85,7 @@ func (t *targetT) ffufUrlEnumRec(host, l string, pi *portInfoT, wg *sync.WaitGro
 	}
 
 	var sslSuffix string
-	if pi.tunnel == "ssl" {
+	if pi.Tunnel == "ssl" {
 		sslSuffix = "s"
 	}
 
@@ -93,14 +93,14 @@ func (t *targetT) ffufUrlEnumRec(host, l string, pi *portInfoT, wg *sync.WaitGro
 	formatS += "-fc 401,403 "
 	formatS += "-w %s:DIR -w %s:FILE -u http%s://%s:%d/DIR/FILE"
 	argsS := fmt.Sprintf(formatS, c.jsonOut,
-		dirlist, filelist, sslSuffix, host, pi.port)
+		dirlist, filelist, sslSuffix, host, pi.Port)
 
 	args := str.Split(argsS, " ")
 
 	args = append(args, "-H")
 	args = append(args, fmt.Sprintf("User-Agent: %s", getRandomUA()))
 
-	c = t.prepareCmd(cname, "ffuf", pi.portS, args)
+	c = t.prepareCmd(cname, "ffuf", pi.PortS, args)
 	t.runCmd(c)
 
 	err = ffuf.CleanFfuf(c.fileOut)
@@ -112,19 +112,19 @@ func (t *targetT) ffufUrlEnumRec(host, l string, pi *portInfoT, wg *sync.WaitGro
 	wg.Done()
 }
 
-func (t *targetT) ffufLogin(host string, pi *portInfoT, form html.LoginParamsT) {
+func (t *TargetT) ffufLogin(host string, pi *PortInfoT, form html.LoginParamsT) {
 	cname := fmt.Sprintf("weblogin_%s_%s_%d",
-		str.Replace(form.Action, "/", "-", -1), host, pi.port)
+		str.Replace(form.Action, "/", "-", -1), host, pi.Port)
 
 	// init cmd prepare to set the file/dir locations
-	c := t.prepareCmd(cname, "ffuf", pi.portS, []string{})
+	c := t.prepareCmd(cname, "ffuf", pi.PortS, []string{})
 
 	var sslSuffix string
-	if pi.tunnel == "ssl" {
+	if pi.Tunnel == "ssl" {
 		sslSuffix = "s"
 	}
 	targetUrl := fmt.Sprintf("http%s://%s:%d/%s",
-		sslSuffix, host, pi.port, form.Action)
+		sslSuffix, host, pi.Port, form.Action)
 
 	errRespSize := 696969696969696969
 
@@ -171,7 +171,7 @@ func (t *targetT) ffufLogin(host string, pi *portInfoT, form html.LoginParamsT) 
 		}
 	}
 
-	c = t.prepareCmd(cname, "ffuf", pi.portS, args)
+	c = t.prepareCmd(cname, "ffuf", pi.PortS, args)
 	t.runCmd(c)
 
 	err := ffuf.CleanFfuf(c.fileOut)
@@ -183,9 +183,9 @@ func (t *targetT) ffufLogin(host string, pi *portInfoT, form html.LoginParamsT) 
 	ffufRes, ffufConfig, err := ffuf.GetResults(c.jsonOut)
 	errExit(err)
 
-	userCredsMap := make(map[string]credsT)
+	userCredsMap := make(map[string]CredsT)
 	for _, res := range ffufRes {
-		var creds credsT
+		var creds CredsT
 		creds.loc = res.Loc
 		creds.user = res.Input.USER
 		creds.pass = res.Input.PASS
@@ -200,7 +200,7 @@ func (t *targetT) ffufLogin(host string, pi *portInfoT, form html.LoginParamsT) 
 
 	for _, creds := range userCredsMap {
 		creds.cookie, creds.redirLoc = getCookie(targetUrl, creds)
-		t.auth["weblogin"] = append(t.auth["weblogin"], creds)
+		t.Auth["weblogin"] = append(t.Auth["weblogin"], creds)
 		if len(creds.cookie) != 0 {
 			print("[!]\tgot cookie for user %s: %s\n",
 				creds.user, creds.cookie)
@@ -208,7 +208,7 @@ func (t *targetT) ffufLogin(host string, pi *portInfoT, form html.LoginParamsT) 
 	}
 }
 
-func getCookie(targetUrl string, creds credsT) (string, string) {
+func getCookie(targetUrl string, creds CredsT) (string, string) {
 	var redirLoc, cookie string
 
 	client := &http.Client{

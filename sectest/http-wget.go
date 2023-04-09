@@ -1,4 +1,4 @@
-package main
+package sectest
 
 import (
 	"bufio"
@@ -12,16 +12,16 @@ import (
 	"sectest/html"
 )
 
-func (t *targetT) wgetGet(host string, pi *portInfoT, creds *credsT, wg *sync.WaitGroup) {
-	cname := fmt.Sprintf("wget_%s_%d", host, pi.port)
+func (t *TargetT) wgetGet(host string, pi *PortInfoT, creds *CredsT, wg *sync.WaitGroup) {
+	cname := fmt.Sprintf("wget_%s_%d", host, pi.Port)
 	if creds != nil {
 		cname += "_" + creds.user
 	}
 
-	mirrorDir := fmt.Sprintf("%s/%s/site", t.host, pi.portS)
+	mirrorDir := fmt.Sprintf("%s/%s/site", t.Host, pi.PortS)
 
 	var sslSuffix string
-	if pi.tunnel == "ssl" {
+	if pi.Tunnel == "ssl" {
 		sslSuffix = "s"
 	}
 
@@ -31,7 +31,7 @@ func (t *targetT) wgetGet(host string, pi *portInfoT, creds *credsT, wg *sync.Wa
 
 	args := str.Split(argsS, " ")
 
-	url := fmt.Sprintf("http%s://%s:%d", sslSuffix, host, pi.port)
+	url := fmt.Sprintf("http%s://%s:%d", sslSuffix, host, pi.Port)
 
 	if creds != nil {
 		args = append(args, "--header=cookie: "+creds.cookie)
@@ -47,14 +47,14 @@ func (t *targetT) wgetGet(host string, pi *portInfoT, creds *credsT, wg *sync.Wa
 	args = append(args, host)
 	args = append(args, url)
 
-	c := t.prepareCmd(cname, "wget", pi.portS, args)
+	c := t.prepareCmd(cname, "wget", pi.PortS, args)
 	c.exitCodeIgnore = true
 	t.runCmd(c)
 
 	wgetSpider(host, c.fileOut)
 
 	// extract forms and login parameters
-	outDir := fmt.Sprintf("%s/%s/site", t.host, pi.portS)
+	outDir := fmt.Sprintf("%s/%s/site", t.Host, pi.PortS)
 	if creds != nil {
 		outDir += "_" + creds.user
 	}
@@ -74,7 +74,7 @@ func (t *targetT) wgetGet(host string, pi *portInfoT, creds *credsT, wg *sync.Wa
 	}
 
 	if creds == nil {
-		pi.loginParams = append(pi.loginParams, loginParams...)
+		pi.LoginParams = append(pi.LoginParams, loginParams...)
 	}
 
 	wg.Done()

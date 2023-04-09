@@ -1,4 +1,4 @@
-package main
+package sectest
 
 import (
 	"bufio"
@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"os"
 	"os/exec"
+	"sync"
 	"time"
 
 	fp "path/filepath"
@@ -13,41 +14,43 @@ import (
 	str "strings"
 )
 
-func (t *targetT) prepareCmd(cname, bin, portS string, args []string) cmdT {
-	var c cmdT
+var MU = &sync.Mutex{}
+
+func (t *TargetT) prepareCmd(cname, bin, portS string, args []string) CmdT {
+	var c CmdT
 	c.name = cname
 	c.bin = bin
 	c.args = args
 	c.portS = portS
 
-	c.fileOut = fp.Join(t.host, portS, c.name+".out")
-	c.jsonOut = fp.Join(t.host, portS, c.name+".json")
+	c.fileOut = fp.Join(t.Host, portS, c.name+".out")
+	c.jsonOut = fp.Join(t.Host, portS, c.name+".json")
 
 	MU.Lock()
 	// first check if cmd already exists and has non-empty args
 	// non-empty args are allowed to set initial file paths
-	val, keyExists := t.cmds[c.name]
+	val, keyExists := t.Cmds[c.name]
 	if keyExists && len(val.args) != 0 {
 		errExit(fmt.Errorf("non-unique cmd name: %s", cname))
 	}
 
 	// add command to the global state
-	t.cmds[c.name] = c
+	t.Cmds[c.name] = c
 	MU.Unlock()
 
-	os.MkdirAll(fp.Join(t.host, portS), 0750)
+	os.MkdirAll(fp.Join(t.Host, portS), 0750)
 
 	return c
 }
 
-func (t *targetT) runCmd(c cmdT) {
+func (t *TargetT) runCmd(c CmdT) {
 	if cmdIsDone(c.fileOut) {
 		print("%s\t%s already done\n", c.portS, c.name)
 		c.status = "ok"
 		c.done = true
 
 		MU.Lock()
-		t.cmds[c.name] = c
+		t.Cmds[c.name] = c
 		MU.Unlock()
 
 		return
@@ -82,7 +85,7 @@ func (t *targetT) runCmd(c cmdT) {
 	c.runTime = time.Since(c.start)
 
 	MU.Lock()
-	t.cmds[c.name] = c
+	t.Cmds[c.name] = c
 	MU.Unlock()
 
 	fmt.Fprintf(fd, "%s\n", str.Repeat("-", 79))
@@ -91,6 +94,27 @@ func (t *targetT) runCmd(c cmdT) {
 
 	msg := "%s\t%s done in %s, %s\n"
 	print(msg, c.portS, c.name, c.runTime.Round(time.Second), c.status)
+}
+
+func (t *TargetT) AllScheduled() bool {
+	if t.portsStarted() && t.TcpScanned && t.UdpScanned {
+		return true
+	}
+	return false
+}
+
+func (t *TargetT) portsStarted() bool {
+	for _, pi := range t.Tcp {
+		if !pi.Started {
+			return false
+		}
+	}
+	for _, pi := range t.Udp {
+		if !pi.Started {
+			return false
+		}
+	}
+	return true
 }
 
 func cmdIsDone(outFile string) bool {
@@ -125,20 +149,20 @@ func errInOutFile(outFile string) bool {
 	return true
 }
 
-func (t *targetT) printInfo() {
-	fmt.Printf("\nhost:\t\t%s\n", t.host)
+func (t *TargetT) printInfo() {
+	fmt.Printf("\nhost:\t\t%s\n", t.Host)
 
-	for p, k := range t.tcp {
+	for p, k := range t.Tcp {
 		fmt.Printf("tcp %d:\t\t%+v\n", p, k)
 	}
 
-	for p, k := range t.udp {
+	for p, k := range t.Udp {
 		fmt.Printf("udp %d:\t\t%+v\n", p, k)
 	}
 
 	return
 
-	for name, c := range t.cmds {
+	for name, c := range t.Cmds {
 		fmt.Printf("\ncmd:\t\t%s\n", name)
 		if c.status != "done" {
 			fmt.Printf("status:\t\t%s\n", c.status)

@@ -14,87 +14,14 @@ import (
 
 	fp "path/filepath"
 
-	"sectest/html"
-	"sectest/nmap"
+	st "sectest/sectest"
 )
-
-type credsT struct {
-	loc      string
-	redirLoc string
-
-	user     string
-	pass     string
-	postData string
-	cookie   string
-}
-
-// cmds maps command names to cmdT structs
-// auth possible keys: "ssh, "ftp", "weblogin"
-type targetT struct {
-	host string
-	tcp  map[int]portInfoT
-	udp  map[int]portInfoT
-	cmds map[string]cmdT
-	info map[infoKeyT]string
-
-	auth map[string][]credsT
-
-	start   time.Time
-	runTime time.Duration
-
-	tcpScanned bool
-	udpScanned bool
-
-	httpInProgress bool
-	wg             *sync.WaitGroup
-}
-
-// status: "ok" or "error"
-type cmdT struct {
-	name           string
-	bin            string
-	args           []string
-	exitCodeIgnore bool
-
-	portS   string
-	fileOut string
-	jsonOut string
-
-	nmapScan nmap.HostT
-
-	start   time.Time
-	runTime time.Duration
-	status  string
-	started bool
-	done    bool
-	resDone bool
-}
-
-type portInfoT struct {
-	started bool
-
-	port  int
-	portS string
-
-	service string
-	tunnel  string
-	product string
-	ver     string
-
-	loginParams []html.LoginParamsT
-}
-
-type infoKeyT struct {
-	name  string
-	portS string
-}
 
 type argsT struct {
 	host      *string
 	skipPorts *string
 }
 
-var MU = &sync.Mutex{}
 var ARGS argsT
 
 func init() {
@@ -110,132 +37,124 @@ func main() {
 		errExit(fmt.Errorf("target host parameter missing (-h)"))
 	}
 
-	var t targetT
-	t.host = *ARGS.host
-	t.start = time.Now()
-	t.tcp = make(map[int]portInfoT)
-	t.udp = make(map[int]portInfoT)
-	t.cmds = make(map[string]cmdT)
-	t.info = make(map[infoKeyT]string)
-	t.auth = make(map[string][]credsT)
+	t := targetInit()
 
-	t.wg = &sync.WaitGroup{}
+	t.Wg.Add(2)
 
-	os.MkdirAll(fp.Join(t.host, "nmap"), 0750)
+	c := t.MakeNmapCmd("tcp_init", "nmap", "-sSV -T4 -p-")
+	t.NmapRun(c, t.Wg)
 
-	t.wg.Add(2)
-
-	c := t.makeNmapCmd("tcp_init", "nmap", "-sSV -T4 -p-")
-	t.nmapRun(c, t.wg)
-
-	c = t.makeNmapCmd("udp_init", "nmap", "-sUV --top-ports 1000")
-	go t.nmapRun(c, t.wg)
+	c = t.MakeNmapCmd("udp_init", "nmap", "-sUV --top-ports 1000")
+	go t.NmapRun(c, t.Wg)
 
 	// polling goroutine to grab results as soon as they're found
 	wgPoll := &sync.WaitGroup{}
 	wgPoll.Add(1)
 	stopResPoll := make(chan bool)
-	go t.pollResults(stopResPoll, wgPoll)
+	go t.PollResults(stopResPoll, wgPoll)
 
 	// polling loop to start testing new ports that appear from nmap scans
 	for {
 		// search for new tcp ports that appear from nmap init scans
-		for p, pi := range t.tcp {
-			if pi.started {
+		for p, pi := range t.Tcp {
+			if pi.Started {
 				continue
 			}
 
-			switch pi.service {
+			switch pi.Service {
 			case "ftp":
-				t.wg.Add(1)
+				t.Wg.Add(1)
 				pi := pi
-				pi.started = true
-				t.tcp[p] = pi
-				go t.testFtp(pi)
+				pi.Started = true
+				t.Tcp[p] = pi
+				go t.TestFtp(pi)
 			case "ssh":
-				t.wg.Add(1)
+				t.Wg.Add(1)
 				pi := pi
-				pi.started = true
-				t.tcp[p] = pi
-				go t.testSsh(pi)
+				pi.Started = true
+				t.Tcp[p] = pi
+				go t.TestSsh(pi)
 			case "http":
-				if !t.httpInProgress {
-					t.httpInProgress = true
-					t.wg.Add(1)
+				if !t.HttpInProgress {
+					t.HttpInProgress = true
+					t.Wg.Add(1)
 					pi := pi
-					pi.started = true
-					t.tcp[p] = pi
-					go t.testHttp(&pi)
+					pi.Started = true
+					t.Tcp[p] = pi
+					go t.TestHttp(&pi)
 				}
 			case "http-proxy":
-				if !t.httpInProgress {
-					t.httpInProgress = true
-					t.wg.Add(1)
+				if !t.HttpInProgress {
+					t.HttpInProgress = true
+					t.Wg.Add(1)
 					pi := pi
-					pi.started = true
-					t.tcp[p] = pi
-					go t.testHttp(&pi)
+					pi.Started = true
+					t.Tcp[p] = pi
+					go t.TestHttp(&pi)
 				}
 			default:
 				pi := pi
-				pi.started = true
-				t.tcp[p] = pi
+				pi.Started = true
+				t.Tcp[p] = pi
 				msg := "ignoring %s on tcp port %d\n"
-				print(msg, pi.service, p)
+				print(msg, pi.Service, p)
 			}
 		}
 
 		// search for new udp ports that appear from nmap init scans
-		for p, pi := range t.udp {
-			if pi.started {
+		for p, pi := range t.Udp {
+			if pi.Started {
 				continue
 			}
 
-			switch pi.service {
+			switch pi.Service {
 			default:
 				msg := "ignoring %s on udp port %d\n"
-				print(msg, pi.service, p)
+				print(msg, pi.Service, p)
 
 				pi := pi
-				pi.started = true
-				t.udp[p] = pi
+				pi.Started = true
+				t.Udp[p] = pi
 			}
 		}
 
 		// slow down the loop and exit if all ports are being tested
-		t.runTime = time.Since(t.start)
-		delay := int(math.Min(t.runTime.Minutes()+1, 15))
+		t.RunTime = time.Since(t.Start)
+		delay := int(math.Min(t.RunTime.Minutes()+1, 15))
 		time.Sleep(time.Duration(delay) * time.Second)
-		if t.allScheduled() {
+		if t.AllScheduled() {
 			break
 		}
 	}
 
-	t.wg.Wait()
+	t.Wg.Wait()
 	stopResPoll <- true
 	wgPoll.Wait()
 
-	t.runTime = time.Since(t.start)
-	print("all done in %s\n", t.runTime.Round(time.Second))
+	t.RunTime = time.Since(t.Start)
+	print("all done in %s\n", t.RunTime.Round(time.Second))
 }
 
-func (t *targetT) allScheduled() bool {
-	if t.portsStarted() && t.tcpScanned && t.udpScanned {
-		return true
-	}
-	return false
+func targetInit() st.TargetT {
+	var t st.TargetT
+	t.Host = *ARGS.host
+	t.SkipPorts = *ARGS.skipPorts
+	t.Start = time.Now()
+	t.Tcp = make(map[int]st.PortInfoT)
+	t.Udp = make(map[int]st.PortInfoT)
+	t.Cmds = make(map[string]st.CmdT)
+	t.Info = make(map[st.InfoKeyT]string)
+	t.Auth = make(map[string][]st.CredsT)
+	t.Wg = &sync.WaitGroup{}
+
+	os.MkdirAll(fp.Join(t.Host, "nmap"), 0750)
+
+	return t
 }
 
-func (t *targetT) portsStarted() bool {
-	for _, info := range t.tcp {
-		if !info.started {
-			return false
-		}
+func errExit(err error) {
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
 	}
-	for _, info := range t.udp {
-		if !info.started {
-			return false
-		}
-	}
-	return true
 }

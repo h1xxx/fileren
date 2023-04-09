@@ -1,4 +1,4 @@
-package main
+package sectest
 
 import (
 	"fmt"
@@ -14,7 +14,7 @@ import (
 	"sectest/ffuf"
 )
 
-func (t *targetT) pollResults(stop chan bool, wg *sync.WaitGroup) {
+func (t *TargetT) PollResults(stop chan bool, wg *sync.WaitGroup) {
 	var allDone bool
 
 	for {
@@ -22,25 +22,25 @@ func (t *targetT) pollResults(stop chan bool, wg *sync.WaitGroup) {
 		case <-stop:
 			allDone = true
 		default:
-			t.runTime = time.Since(t.start)
-			delay := int(math.Min(t.runTime.Minutes()+1*5, 60))
+			t.RunTime = time.Since(t.Start)
+			delay := int(math.Min(t.RunTime.Minutes()+1*5, 60))
 			time.Sleep(time.Duration(delay) * time.Second)
 		}
 
-		for cname, cmd := range t.cmds {
+		for cname, cmd := range t.Cmds {
 			if cmd.done && cmd.resDone {
 				continue
 			}
 
-			key := infoKeyT{name: cmd.name, portS: cmd.portS}
+			key := InfoKeyT{Name: cmd.name, PortS: cmd.portS}
 
 			switch {
 			case str.HasPrefix(cmd.name, "url_enum"):
-				t.info[key] = t.urlEnumInfo(cmd.jsonOut)
+				t.Info[key] = t.urlEnumInfo(cmd.jsonOut)
 
 			case str.HasPrefix(cmd.name, "weblogin"):
 				text := t.webloginInfo(cmd.jsonOut)
-				t.info[key] = text
+				t.Info[key] = text
 			}
 
 			if cmd.done {
@@ -48,28 +48,28 @@ func (t *targetT) pollResults(stop chan bool, wg *sync.WaitGroup) {
 				c.resDone = true
 
 				MU.Lock()
-				t.cmds[cname] = c
+				t.Cmds[cname] = c
 				MU.Unlock()
 			}
 		}
 
 		if allDone {
-			dumpResultInfo(t.host, t.info)
+			dumpResultInfo(t.Host, t.Info)
 			wg.Done()
 			return
 		}
 	}
 }
 
-func dumpResultInfo(host string, info map[infoKeyT]string) {
+func dumpResultInfo(host string, info map[InfoKeyT]string) {
 	os.MkdirAll(fp.Join(host, "info"), 0750)
 
 	portInfo := make(map[string][]string)
 
 	for k, v := range info {
-		portInfo[k.portS] = append(portInfo[k.portS],
+		portInfo[k.PortS] = append(portInfo[k.PortS],
 			fmt.Sprintf("%s\n%s\n\n%s\n\n",
-				k.name, str.Repeat("=", len(k.name)), v))
+				k.Name, str.Repeat("=", len(k.Name)), v))
 	}
 
 	for portS, textSlice := range portInfo {
@@ -92,7 +92,7 @@ func dumpResultInfo(host string, info map[infoKeyT]string) {
 	}
 }
 
-func (t *targetT) urlEnumInfo(file string) string {
+func (t *TargetT) urlEnumInfo(file string) string {
 	ffufRes, _, _ := ffuf.GetResults(file)
 	codes := make(map[int]string)
 	for _, res := range ffufRes {
@@ -112,7 +112,7 @@ func (t *targetT) urlEnumInfo(file string) string {
 	return str.Join(out, "\n")
 }
 
-func (t *targetT) webloginInfo(file string) string {
+func (t *TargetT) webloginInfo(file string) string {
 	var out string
 	ffufRes, _, _ := ffuf.GetResults(file)
 	for _, res := range ffufRes {

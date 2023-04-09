@@ -1,4 +1,4 @@
-package main
+package sectest
 
 import (
 	"fmt"
@@ -10,12 +10,12 @@ import (
 	"sectest/nmap"
 )
 
-func (t *targetT) makeNmapCmd(name, portS, argsS string) cmdT {
+func (t *TargetT) MakeNmapCmd(name, portS, argsS string) CmdT {
 	cname := name
 
 	argsS += " -g53 --open --max-retries 1 -v"
 	argsS += " --script-timeout 1m --host-timeout 60m"
-	argsS += " -oX " + fp.Join(t.host, "nmap", name+".xml")
+	argsS += " -oX " + fp.Join(t.Host, "nmap", name+".xml")
 
 	if name == "udp_init" {
 		argsS += " --version-intensity 0"
@@ -39,16 +39,16 @@ func (t *targetT) makeNmapCmd(name, portS, argsS string) cmdT {
 		args = append(args, "httpspider.maxpagecount=-1")
 	}
 
-	args = append(args, t.host)
+	args = append(args, t.Host)
 	c := t.prepareCmd(cname, "nmap", portS, args)
 
 	return c
 }
 
-func (t *targetT) nmapRun(c cmdT, wg *sync.WaitGroup) {
+func (t *TargetT) NmapRun(c CmdT, wg *sync.WaitGroup) {
 	t.runCmd(c)
 
-	nmapScan, err := nmap.ReadScan(fp.Join(t.host, "nmap", c.name+".xml"))
+	nmapScan, err := nmap.ReadScan(fp.Join(t.Host, "nmap", c.name+".xml"))
 	if err != nil {
 		msg := "critical error in %s: can't parse xml - %v\n"
 		print(msg, c.name, err)
@@ -60,14 +60,14 @@ func (t *targetT) nmapRun(c cmdT, wg *sync.WaitGroup) {
 
 	MU.Lock()
 
-	t.cmds[c.name] = c
+	t.Cmds[c.name] = c
 	t.getTestPorts(&c)
 
 	switch c.name {
 	case "tcp_init":
-		t.tcpScanned = true
+		t.TcpScanned = true
 	case "udp_init":
-		t.udpScanned = true
+		t.UdpScanned = true
 	}
 
 	MU.Unlock()
@@ -75,9 +75,9 @@ func (t *targetT) nmapRun(c cmdT, wg *sync.WaitGroup) {
 	wg.Done()
 }
 
-func (t *targetT) getTestPorts(c *cmdT) {
+func (t *TargetT) getTestPorts(c *CmdT) {
 	skipPorts := make(map[string]bool)
-	skipFields := str.Split(*ARGS.skipPorts, ",")
+	skipFields := str.Split(t.SkipPorts, ",")
 
 	for _, port := range skipFields {
 		skipPorts[port] = true
@@ -90,20 +90,20 @@ func (t *targetT) getTestPorts(c *cmdT) {
 				continue
 			}
 
-			var pi portInfoT
+			var pi PortInfoT
 
-			pi.port = p.PortId
-			pi.portS = fmt.Sprintf("%dt", p.PortId)
-			pi.service = p.Service.Name
-			pi.tunnel = p.Service.Tunnel
-			pi.product = p.Service.Product
-			pi.ver = p.Service.Ver
+			pi.Port = p.PortId
+			pi.PortS = fmt.Sprintf("%dt", p.PortId)
+			pi.Service = p.Service.Name
+			pi.Tunnel = p.Service.Tunnel
+			pi.Product = p.Service.Product
+			pi.Ver = p.Service.Ver
 
-			if skipPorts[pi.portS] {
-				fmt.Printf("skipping port %s\n", pi.portS)
-				delete(t.tcp, p.PortId)
+			if skipPorts[pi.PortS] {
+				fmt.Printf("skipping port %s\n", pi.PortS)
+				delete(t.Tcp, p.PortId)
 			} else {
-				t.tcp[p.PortId] = pi
+				t.Tcp[p.PortId] = pi
 			}
 		}
 
@@ -113,19 +113,19 @@ func (t *targetT) getTestPorts(c *cmdT) {
 				continue
 			}
 
-			var pi portInfoT
+			var pi PortInfoT
 
-			pi.port = p.PortId
-			pi.portS = fmt.Sprintf("%du", p.PortId)
-			pi.service = p.Service.Name
-			pi.product = p.Service.Product
-			pi.ver = p.Service.Ver
+			pi.Port = p.PortId
+			pi.PortS = fmt.Sprintf("%du", p.PortId)
+			pi.Service = p.Service.Name
+			pi.Product = p.Service.Product
+			pi.Ver = p.Service.Ver
 
-			if skipPorts[pi.portS] {
-				fmt.Printf("skipping port %s\n", pi.portS)
-				delete(t.udp, p.PortId)
+			if skipPorts[pi.PortS] {
+				fmt.Printf("skipping port %s\n", pi.PortS)
+				delete(t.Udp, p.PortId)
 			} else {
-				t.udp[p.PortId] = pi
+				t.Udp[p.PortId] = pi
 			}
 		}
 	}

@@ -136,6 +136,15 @@ for i in $(seq 0 15); do
 done
 
 
+# common locations of files on Windows
+# ------------------------------------
+
+cp /usr/share/seclists/Fuzzing/LFI/LFI-gracefulsecurity-windows.txt \
+  ../data/files_win
+
+
+# nmap port split is not used currently by sectest, keeping it just in case
+
 # nmap port lists
 # ---------------
 

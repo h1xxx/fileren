@@ -45,7 +45,7 @@ func (t *TargetT) prepareCmd(cname, bin, portS string, args []string) CmdT {
 
 func (t *TargetT) runCmd(c CmdT) {
 	if cmdIsDone(c.fileOut) {
-		print("%s\t%s already done\n", c.portS, c.name)
+		Print("%s\t%s already done\n", c.portS, c.name)
 		c.status = "ok"
 		c.done = true
 
@@ -56,7 +56,7 @@ func (t *TargetT) runCmd(c CmdT) {
 		return
 	}
 
-	print("%s\t%s starting...\n", c.portS, c.name)
+	Print("%s\t%s starting...\n", c.portS, c.name)
 
 	flags := os.O_CREATE | os.O_TRUNC | os.O_WRONLY
 	fd, err := os.OpenFile(c.fileOut, flags, 0640)
@@ -93,7 +93,7 @@ func (t *TargetT) runCmd(c CmdT) {
 	fmt.Fprintf(fd, "sectest cmd time: %s\n", c.runTime.Round(time.Second))
 
 	msg := "%s\t%s done in %s, %s\n"
-	print(msg, c.portS, c.name, c.runTime.Round(time.Second), c.status)
+	Print(msg, c.portS, c.name, c.runTime.Round(time.Second), c.status)
 }
 
 func (t *TargetT) AllScheduled() bool {
@@ -230,7 +230,7 @@ func stringNeedsQuote(s string) bool {
 	return false
 }
 
-func print(format string, a ...any) {
+func Print(format string, a ...any) {
 	MU.Lock()
 	fmt.Printf(format, a...)
 	MU.Unlock()

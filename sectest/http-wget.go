@@ -51,7 +51,7 @@ func (t *TargetT) wgetGet(host string, pi *PortInfoT, creds *CredsT, wg *sync.Wa
 	c.exitCodeIgnore = true
 	t.runCmd(c)
 
-	wgetSpider(host, c.fileOut)
+	wgetSpider(host, c.fileOut, creds)
 
 	// extract forms and login parameters
 	outDir := fmt.Sprintf("%s/%s/site", t.Host, pi.PortS)
@@ -63,14 +63,14 @@ func (t *TargetT) wgetGet(host string, pi *PortInfoT, creds *CredsT, wg *sync.Wa
 		"forms_"+host, "login_params_"+host)
 	if err != nil {
 		msg := "error in %s: can't dump html forms - %v\n"
-		print(msg, c.name, err)
+		Print(msg, c.name, err)
 	}
 
 	loginParams, err := html.ParseLoginParams(
 		outDir + "/login_params_" + host)
 	if err != nil {
 		msg := "error in %s: can't get login parameters - %v\n"
-		print(msg, c.name, err)
+		Print(msg, c.name, err)
 	}
 
 	if creds == nil {
@@ -81,7 +81,7 @@ func (t *TargetT) wgetGet(host string, pi *PortInfoT, creds *CredsT, wg *sync.Wa
 }
 
 // cleans out output file from wget by removing irrelevant lines
-func wgetSpider(host, file string) error {
+func wgetSpider(host, file string, creds *CredsT) error {
 	fd, err := os.Open(file)
 	if err != nil {
 		return err
@@ -162,7 +162,12 @@ func wgetSpider(host, file string) error {
 			urlI.code, urlI.size, urlI.mime, urlI.url)
 	}
 
-	file = str.Replace(file, "wget_", "site/spider_", 1)
+	if creds != nil {
+		file = str.Replace(file, "wget_",
+			"site_"+creds.user+"/spider_", 1)
+	} else {
+		file = str.Replace(file, "wget_", "site/spider_", 1)
+	}
 	file = str.TrimSuffix(file, ".out")
 	flags := os.O_CREATE | os.O_TRUNC | os.O_WRONLY
 	fd, err = os.OpenFile(file, flags, 0644)

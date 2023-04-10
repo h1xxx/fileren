@@ -97,7 +97,7 @@ func main() {
 				pi.Started = true
 				t.Tcp[p] = pi
 				msg := "ignoring %s on tcp port %d\n"
-				print(msg, pi.Service, p)
+				st.Print(msg, pi.Service, p)
 			}
 		}
 
@@ -110,7 +110,7 @@ func main() {
 			switch pi.Service {
 			default:
 				msg := "ignoring %s on udp port %d\n"
-				print(msg, pi.Service, p)
+				st.Print(msg, pi.Service, p)
 
 				pi := pi
 				pi.Started = true
@@ -132,7 +132,7 @@ func main() {
 	wgPoll.Wait()
 
 	t.RunTime = time.Since(t.Start)
-	print("all done in %s\n", t.RunTime.Round(time.Second))
+	st.Print("all done in %s\n", t.RunTime.Round(time.Second))
 }
 
 func targetInit() st.TargetT {
@@ -148,6 +148,7 @@ func targetInit() st.TargetT {
 	t.Wg = &sync.WaitGroup{}
 
 	os.MkdirAll(fp.Join(t.Host, "nmap"), 0750)
+	os.MkdirAll(fp.Join(t.Host, "input"), 0750)
 
 	return t
 }

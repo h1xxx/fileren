@@ -50,7 +50,7 @@ func (t *TargetT) ffufUrlEnum(host string, pi *PortInfoT, creds *CredsT, wg *syn
 	err := ffuf.CleanFfuf(c.fileOut)
 	if err != nil {
 		msg := "error in %s: can't get clean ffuf output - %v\n"
-		print(msg, c.name, err)
+		Print(msg, c.name, err)
 	}
 
 	wg.Done()
@@ -69,7 +69,7 @@ func (t *TargetT) ffufUrlEnumRec(host, l string, pi *PortInfoT, wg *sync.WaitGro
 	ffufRes, _, err := ffuf.GetResults(file)
 	if err != nil {
 		msg := "error in %s: can't get ffuf results - %v\n"
-		print(msg, c.name, err)
+		Print(msg, c.name, err)
 	}
 
 	filelist := "./data/http_url_enum_rec_file"
@@ -106,7 +106,7 @@ func (t *TargetT) ffufUrlEnumRec(host, l string, pi *PortInfoT, wg *sync.WaitGro
 	err = ffuf.CleanFfuf(c.fileOut)
 	if err != nil {
 		msg := "error in %s: can't get clean ffuf output - %v\n"
-		print(msg, c.name, err)
+		Print(msg, c.name, err)
 	}
 
 	wg.Done()
@@ -149,12 +149,12 @@ func (t *TargetT) ffufLogin(host string, pi *PortInfoT, form html.LoginParamsT) 
 		err := cmd.Run()
 		if err != nil {
 			msg := "error in %s: can't probe resp size - %v\n"
-			print(msg, c.name, err)
+			Print(msg, c.name, err)
 		}
 
 		errRespSize, err = ffuf.GetRespSize(c.jsonOut)
 		if err != nil {
-			print("ffuf weblogin: can't get resp size, skipping\n")
+			Print("ffuf weblogin: can't get resp size, skipping\n")
 			return
 		}
 	}
@@ -177,7 +177,7 @@ func (t *TargetT) ffufLogin(host string, pi *PortInfoT, form html.LoginParamsT) 
 	err := ffuf.CleanFfuf(c.fileOut)
 	if err != nil {
 		msg := "error in %s: can't get clean ffuf output - %v\n"
-		print(msg, c.name, err)
+		Print(msg, c.name, err)
 	}
 
 	ffufRes, ffufConfig, err := ffuf.GetResults(c.jsonOut)
@@ -202,7 +202,7 @@ func (t *TargetT) ffufLogin(host string, pi *PortInfoT, form html.LoginParamsT) 
 		creds.cookie, creds.redirLoc = getCookie(targetUrl, creds)
 		t.Auth["weblogin"] = append(t.Auth["weblogin"], creds)
 		if len(creds.cookie) != 0 {
-			print("[!]\tgot cookie for user %s: %s\n",
+			Print("[!]\tgot cookie for user %s: %s\n",
 				creds.user, creds.cookie)
 		}
 	}

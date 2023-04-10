@@ -10,7 +10,7 @@ import (
 )
 
 func (t *TargetT) TestFtp(pi PortInfoT) {
-	print("testing %s on tcp port %d...\n", pi.Service, pi.Port)
+	Print("testing %s on tcp port %d...\n", pi.Service, pi.Port)
 
 	wg := &sync.WaitGroup{}
 	wg.Add(3)
@@ -31,7 +31,7 @@ func (t *TargetT) TestFtp(pi PortInfoT) {
 	go t.ftpBrute("3", pi, wg)
 	wg.Wait()
 
-	print("finished testing %s on tcp port %d\n", pi.Service, pi.Port)
+	Print("finished testing %s on tcp port %d\n", pi.Service, pi.Port)
 	t.Wg.Done()
 }
 
@@ -63,7 +63,7 @@ func (t *TargetT) ftpMirror(user, pass string, pi PortInfoT, wg *sync.WaitGroup)
 		msg = "%s\tftp user %s - dir size too big, ignoring\n"
 	}
 	if err != nil || size > 1024 {
-		print(msg, pi.PortS, user)
+		Print(msg, pi.PortS, user)
 		wg.Done()
 		return
 	}

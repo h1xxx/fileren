@@ -51,7 +51,7 @@ func (t *TargetT) NmapRun(c CmdT, wg *sync.WaitGroup) {
 	nmapScan, err := nmap.ReadScan(fp.Join(t.Host, "nmap", c.name+".xml"))
 	if err != nil {
 		msg := "critical error in %s: can't parse xml - %v\n"
-		print(msg, c.name, err)
+		Print(msg, c.name, err)
 	}
 
 	if len(nmapScan.Hosts) > 0 {

@@ -8,7 +8,7 @@ import (
 )
 
 func (t *TargetT) TestSsh(pi PortInfoT) {
-	print("testing %s on tcp port %d...\n", pi.Service, pi.Port)
+	Print("testing %s on tcp port %d...\n", pi.Service, pi.Port)
 
 	wg := &sync.WaitGroup{}
 	wg.Add(3)
@@ -31,7 +31,7 @@ func (t *TargetT) TestSsh(pi PortInfoT) {
 	go t.sshBruteUser("3", pi, wg)
 	wg.Wait()
 
-	print("finished testing %s on tcp port %d\n", pi.Service, pi.Port)
+	Print("finished testing %s on tcp port %d\n", pi.Service, pi.Port)
 	t.Wg.Done()
 }
 

@@ -6,7 +6,7 @@ import (
 )
 
 func (t *TargetT) TestHttp(pi *PortInfoT) {
-	print("testing %s on tcp port %d...\n", pi.Service, pi.Port)
+	Print("testing %s on tcp port %d...\n", pi.Service, pi.Port)
 
 	nmapWg := &sync.WaitGroup{}
 	nmapWg.Add(1)
@@ -45,7 +45,7 @@ func (t *TargetT) TestHttp(pi *PortInfoT) {
 
 	nmapWg.Wait()
 
-	print("finished testing %s on tcp port %d\n", pi.Service, pi.Port)
+	Print("finished testing %s on tcp port %d\n", pi.Service, pi.Port)
 	t.HttpInProgress = false
 	t.Wg.Done()
 }

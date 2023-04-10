@@ -23,7 +23,7 @@ func (t *TargetT) PollResults(stop chan bool, wg *sync.WaitGroup) {
 			allDone = true
 		default:
 			t.RunTime = time.Since(t.Start)
-			delay := int(math.Min(t.RunTime.Minutes()+1*5, 60))
+			delay := int(math.Min(t.RunTime.Minutes()*5+1, 60))
 			time.Sleep(time.Duration(delay) * time.Second)
 		}
 

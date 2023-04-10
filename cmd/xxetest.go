@@ -32,9 +32,17 @@ func main() {
 		errExit(fmt.Errorf("incorrect parameters"))
 	}
 
-	err := xxe.DirectTest(*ARGS.url, *ARGS.xmlTemplate, *ARGS.cookie,
+	p, err := xxe.GetParams(
+		*ARGS.url, *ARGS.xmlTemplate, *ARGS.cookie,
 		*ARGS.outDir, *ARGS.fileList)
 	errExit(err)
+
+	err = p.DirectTest()
+	errExit(err)
+
+	// todo: do
+	//err = p.OobTest()
+	//errExit(err)
 }
 
 func errExit(err error) {

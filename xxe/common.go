@@ -2,6 +2,7 @@ package xxe
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/xml"
 	"fmt"
 	"io/ioutil"
@@ -13,6 +14,16 @@ import (
 	str "strings"
 )
 
+type ParamsT struct {
+	Url        string
+	XmlData    string
+	XmlDecoder *xml.Decoder
+	Cookie     string
+	OutDir     string
+	FileList   string
+	Files      []string
+}
+
 type NodeT struct {
 	XMLName xml.Name
 	Attrs   []xml.Attr `xml:"-"`
@@ -23,6 +34,33 @@ type NodeT struct {
 type LeafT struct {
 	Name  string
 	Value string
+}
+
+func GetParams(url, xmlTemplate, cookie, outDir, fileList string) (ParamsT, error) {
+	var p ParamsT
+
+	p.Url = url
+
+	xmlData, err := ioutil.ReadFile(xmlTemplate)
+	if err != nil {
+		return p, err
+	}
+	p.XmlData = string(xmlData)
+	p.XmlDecoder = xml.NewDecoder(bytes.NewBuffer(xmlData))
+
+	p.Cookie = cookie
+	p.OutDir = outDir
+	p.FileList = fileList
+
+	p.Files, err = readFileList(fileList)
+	if err != nil {
+		return p, err
+	}
+
+	// todo: make this more general
+	p.Files = append(p.Files, "c:/users/daniel/.ssh/id_rsa")
+
+	return p, nil
 }
 
 func walkNodes(nodes []NodeT, f func(NodeT) bool) {

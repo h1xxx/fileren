@@ -37,7 +37,7 @@ type LeafT struct {
 	Value string
 }
 
-func GetParams(url, xmlTemplate, cookie, outDir, fileList string) (ParamsT, error) {
+func GetParams(url, xmlTemplate, cookie, outDir, fileList, fileListVars string) (ParamsT, error) {
 	var p ParamsT
 
 	p.Url = url
@@ -53,13 +53,10 @@ func GetParams(url, xmlTemplate, cookie, outDir, fileList string) (ParamsT, erro
 	p.OutDir = outDir
 	p.FileList = fileList
 
-	p.Files, err = readFileList(fileList)
+	p.Files, err = readFileList(fileList, str.Split(fileListVars, ","))
 	if err != nil {
 		return p, err
 	}
-
-	// todo: make this more general
-	p.Files = append(p.Files, "c:/users/daniel/.ssh/id_rsa")
 
 	return p, nil
 }
@@ -86,7 +83,7 @@ func defilter(content string) ([]byte, error) {
 	return inflated, nil
 }
 
-func readFileList(path string) ([]string, error) {
+func readFileList(path string, fileListVars []string) ([]string, error) {
 	var fileList []string
 
 	fd, err := os.Open(path)
@@ -98,7 +95,14 @@ func readFileList(path string) ([]string, error) {
 	input := bufio.NewScanner(fd)
 	for input.Scan() {
 		line := str.Trim(input.Text(), " ")
-		fileList = append(fileList, line)
+		if str.Contains(line, "${VAR}") {
+			for _, v := range fileListVars {
+				line = str.Replace(line, "${VAR}", v, -1)
+				fileList = append(fileList, line)
+			}
+		} else {
+			fileList = append(fileList, line)
+		}
 	}
 
 	return fileList, nil

@@ -9,11 +9,12 @@ import (
 )
 
 type argsT struct {
-	url         *string
-	xmlTemplate *string
-	cookie      *string
-	outDir      *string
-	fileList    *string
+	url          *string
+	xmlTemplate  *string
+	cookie       *string
+	outDir       *string
+	fileList     *string
+	fileListVars *string
 }
 
 var ARGS argsT
@@ -24,6 +25,8 @@ func init() {
 	ARGS.cookie = flag.String("c", "", "cookie (optional)")
 	ARGS.outDir = flag.String("d", ".", "download dir for files (optional)")
 	ARGS.fileList = flag.String("f", "", "list of files to download")
+	msg := "coma-separated list of variables to replace ${VAR} in file list"
+	ARGS.fileListVars = flag.String("v", "", msg)
 }
 
 func main() {
@@ -34,7 +37,7 @@ func main() {
 
 	p, err := xxe.GetParams(
 		*ARGS.url, *ARGS.xmlTemplate, *ARGS.cookie,
-		*ARGS.outDir, *ARGS.fileList)
+		*ARGS.outDir, *ARGS.fileList, *ARGS.fileListVars)
 	errExit(err)
 
 	err = p.DirectTest()

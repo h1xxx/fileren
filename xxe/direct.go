@@ -11,6 +11,7 @@ import (
 )
 
 // todo: try entities from /usr/share/seclists/Fuzzing/XXE-Fuzzing.txt
+// todo: add hacktricks/pentesting-web/xxe-xee-xml-external-entity.md
 
 func (p *ParamsT) DirectTest() error {
 	fmt.Println("testing...")

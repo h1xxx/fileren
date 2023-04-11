@@ -3,8 +3,9 @@ package xxe
 import (
 	"bufio"
 	"bytes"
+	"compress/flate"
+	"encoding/base64"
 	"encoding/xml"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -71,17 +72,18 @@ func walkNodes(nodes []NodeT, f func(NodeT) bool) {
 	}
 }
 
-func saveFile(file, content string, isDeflated bool) error {
-	opts := os.O_CREATE | os.O_TRUNC | os.O_WRONLY
-	fd, err := os.OpenFile(file, opts, 0644)
+func defilter(content string) ([]byte, error) {
+	deflated := make([]byte, base64.StdEncoding.DecodedLen(len(content)))
+	base64.StdEncoding.Decode(deflated, []byte(content))
+
+	inflated, err := ioutil.ReadAll(
+		flate.NewReader(bytes.NewReader(deflated)))
+
 	if err != nil {
-		return err
+		return deflated, err
 	}
-	defer fd.Close()
 
-	fmt.Fprintf(fd, content)
-
-	return nil
+	return inflated, nil
 }
 
 func readFileList(path string) ([]string, error) {

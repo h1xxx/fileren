@@ -15,9 +15,10 @@ func (t *TargetT) TestHttp(pi *PortInfoT) {
 	go t.NmapRun(nmapCmd, nmapWg)
 
 	wg := &sync.WaitGroup{}
-	wg.Add(3)
+	wg.Add(4)
 
 	go t.wgetGet(t.Host, pi, nil, wg)
+	go t.cewl(t.Host, pi, nil, wg)
 	go t.whatWeb(t.Host, pi, wg)
 	go t.ffufUrlEnum(t.Host, pi, nil, wg)
 	wg.Wait()
@@ -30,8 +31,9 @@ func (t *TargetT) TestHttp(pi *PortInfoT) {
 	// grab first available credentials and do authenticated scans
 	if len(t.Auth["weblogin"]) > 0 {
 		creds := t.Auth["weblogin"][0]
-		wg.Add(2)
+		wg.Add(3)
 		go t.wgetGet(t.Host, pi, &creds, wg)
+		go t.cewl(t.Host, pi, &creds, wg)
 		go t.ffufUrlEnum(t.Host, pi, &creds, wg)
 		wg.Wait()
 	}

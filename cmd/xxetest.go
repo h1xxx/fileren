@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strings"
 
 	xxe "sectest/xxe"
 )
@@ -35,9 +36,11 @@ func main() {
 		errExit(fmt.Errorf("incorrect parameters"))
 	}
 
+	fileListVars := strings.Split(*ARGS.fileListVars, ",")
+
 	p, err := xxe.GetParams(
 		*ARGS.url, *ARGS.xmlTemplate, *ARGS.cookie,
-		*ARGS.outDir, *ARGS.fileList, *ARGS.fileListVars)
+		*ARGS.outDir, *ARGS.fileList, fileListVars)
 	errExit(err)
 
 	err = p.DirectTest()

@@ -139,8 +139,58 @@ done
 # common locations of files on Windows
 # ------------------------------------
 
-cp /usr/share/seclists/Fuzzing/LFI/LFI-gracefulsecurity-windows.txt \
-  ../data/files_win
+cat << EOF > ../data/files_win
+c:/boot.ini
+c:/windows/win.ini
+c:/winnt/win.ini
+c:/windows/debug/netsetup.log
+c:/windows/system32/drivers/etc/hosts
+c:/windows/windowsupdate.log
+index.html
+index.php
+home.html
+home.php
+about.html
+about.php
+admin.html
+admin.php
+EOF
+
+cat /usr/share/seclists/Fuzzing/LFI/LFI-gracefulsecurity-windows.txt \
+  | tr '[A-Z]' '[a-z]' \
+  | sort -u \
+  | grep -vF -e '{'  -e '}' \
+  | grep -vF 'c:/boot.ini' \
+  | grep -vF 'c:/windows/win.ini' \
+  | grep -vF 'c:/winnt/win.ini' \
+  | grep -vF 'c:/windows/windowsupdate.log' \
+  | grep -vF 'c:/windows/system32/drivers/etc/hosts' \
+  | grep -vF 'c:/windows/debug/netsetup.log' \
+  >> ../data/files_win
+
+cat << EOF >> ../data/files_win
+c:/users/\${VAR}/.ssh/id_rsa
+c:/users/\${VAR}/.ssh/id_rsa.pub
+c:/users/\${VAR}/.ssh/id_dsa
+c:/users/\${VAR}/.ssh/id_dsa.pub
+c:/users/\${VAR}/.ssh/id_ecdsa
+c:/users/\${VAR}/.ssh/id_ecdsa.pub
+c:/users/\${VAR}/.ssh/id_ecdsa_sk
+c:/users/\${VAR}/.ssh/id_ecdsa_sk.pub
+c:/users/\${VAR}/.ssh/id_ed25519
+c:/users/\${VAR}/.ssh/id_ed25519.pub
+c:/users/\${VAR}/.ssh/id_ed25519_sk
+c:/users/\${VAR}/.ssh/id_ed25519_sk.pub
+c:/users/\${VAR}/desktop/user
+c:/users/\${VAR}/desktop/flag
+c:/users/\${VAR}/desktop/user.txt
+c:/users/\${VAR}/desktop/flag.txt
+c:/users/\${VAR}/documents/user
+c:/users/\${VAR}/documents/flag
+c:/users/\${VAR}/documents/user.txt
+c:/users/\${VAR}/documents/flag.txt
+EOF
+
 
 
 # nmap port split is not used currently by sectest, keeping it just in case

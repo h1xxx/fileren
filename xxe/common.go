@@ -23,6 +23,7 @@ type ParamsT struct {
 	OutDir     string
 	FileList   string
 	Files      []string
+	LogFd      *os.File
 }
 
 type NodeT struct {
@@ -37,7 +38,7 @@ type LeafT struct {
 	Value string
 }
 
-func GetParams(url, xmlTemplate, cookie, outDir, fileList, fileListVars string) (ParamsT, error) {
+func GetParams(url, xmlTemplate, cookie, outDir, fileList string, fileListVars []string) (ParamsT, error) {
 	var p ParamsT
 
 	p.Url = url
@@ -53,7 +54,14 @@ func GetParams(url, xmlTemplate, cookie, outDir, fileList, fileListVars string) 
 	p.OutDir = outDir
 	p.FileList = fileList
 
-	p.Files, err = readFileList(fileList, str.Split(fileListVars, ","))
+	p.Files, err = readFileList(fileList, fileListVars)
+	if err != nil {
+		return p, err
+	}
+
+	os.MkdirAll(p.OutDir, 0750)
+	opts := os.O_CREATE | os.O_TRUNC | os.O_WRONLY
+	p.LogFd, err = os.OpenFile(p.OutDir+"/xxetest.log", opts, 0644)
 	if err != nil {
 		return p, err
 	}
@@ -97,8 +105,11 @@ func readFileList(path string, fileListVars []string) ([]string, error) {
 		line := str.Trim(input.Text(), " ")
 		if str.Contains(line, "${VAR}") {
 			for _, v := range fileListVars {
-				line = str.Replace(line, "${VAR}", v, -1)
-				fileList = append(fileList, line)
+				if v == "" {
+					continue
+				}
+				replaced := str.Replace(line, "${VAR}", v, -1)
+				fileList = append(fileList, replaced)
 			}
 		} else {
 			fileList = append(fileList, line)

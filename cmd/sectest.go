@@ -5,6 +5,7 @@ package main
 // vulners
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"math"
@@ -150,7 +151,35 @@ func targetInit() st.TargetT {
 	os.MkdirAll(fp.Join(t.Host, "nmap"), 0750)
 	os.MkdirAll(fp.Join(t.Host, "input"), 0750)
 
+	xxeReqFile := fp.Join(t.Host, "input", "http_xxe.req")
+	if !fileExists(xxeReqFile) {
+		os.Create(xxeReqFile)
+	}
+
+	if !fileIsEmpty(xxeReqFile) {
+		t.XxeReqFile = xxeReqFile
+	}
+
 	return t
+}
+
+func fileIsEmpty(file string) bool {
+	fi, err := os.Stat(file)
+	if err != nil {
+		return true
+	}
+	if fi.Size() == 0 {
+		return true
+	}
+	return false
+}
+
+func fileExists(file string) bool {
+	_, err := os.Stat(file)
+	if errors.Is(err, os.ErrNotExist) {
+		return false
+	}
+	return true
 }
 
 func errExit(err error) {

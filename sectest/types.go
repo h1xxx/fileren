@@ -28,7 +28,10 @@ type TargetT struct {
 	Info      map[InfoKeyT]string
 	SkipPorts string
 
-	Auth map[string][]CredsT
+	Auth  map[string][]CredsT
+	Users []string
+
+	XxeReqFile string
 
 	Start   time.Time
 	RunTime time.Duration
@@ -48,6 +51,7 @@ type CmdT struct {
 	exitCodeIgnore bool
 
 	portS   string
+	outDir  string
 	fileOut string
 	jsonOut string
 

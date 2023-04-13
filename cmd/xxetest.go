@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"strings"
 
@@ -14,6 +15,7 @@ type argsT struct {
 	xmlTemplate  *string
 	cookie       *string
 	outDir       *string
+	outFile      *string
 	fileList     *string
 	fileListVars *string
 }
@@ -24,7 +26,8 @@ func init() {
 	ARGS.url = flag.String("u", "", "target url")
 	ARGS.xmlTemplate = flag.String("x", "", "xml template sent to server")
 	ARGS.cookie = flag.String("c", "", "cookie (optional)")
-	ARGS.outDir = flag.String("d", ".", "download dir for files (optional)")
+	ARGS.outDir = flag.String("d", ".", "download dir (optional)")
+	ARGS.outFile = flag.String("o", ".", "output file for logging")
 	ARGS.fileList = flag.String("f", "", "list of files to download")
 	msg := "coma-separated list of variables to replace ${VAR} in file list"
 	ARGS.fileListVars = flag.String("v", "", msg)
@@ -38,9 +41,14 @@ func main() {
 
 	fileListVars := strings.Split(*ARGS.fileListVars, ",")
 
+	xmlData, err := ioutil.ReadFile(*ARGS.xmlTemplate)
+	errExit(err)
+
+	truncLog := true
+
 	p, err := xxe.GetParams(
-		*ARGS.url, *ARGS.xmlTemplate, *ARGS.cookie,
-		*ARGS.outDir, *ARGS.fileList, fileListVars)
+		*ARGS.url, string(xmlData), *ARGS.cookie, *ARGS.outDir,
+		*ARGS.outFile, *ARGS.fileList, fileListVars, truncLog)
 	errExit(err)
 
 	err = p.DirectTest()

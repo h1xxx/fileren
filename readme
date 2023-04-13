@@ -48,6 +48,7 @@ http
 - mirror the site with and w/o authentication (wget)
 - enumerate api endpoints (ffuf)
 - enumerate vhosts (ffuf)
+- download files via XXE injection (custom lib)
 
 vulnerability scans
 -------------------

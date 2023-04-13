@@ -76,3 +76,7 @@ run
 mssqlclient.py Administrator@10.129.201.248 -windows-auth
 hydra? expect?
 
+
+xxe
+===
+add random ua in xxetool

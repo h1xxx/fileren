@@ -23,8 +23,11 @@ func (t *TargetT) prepareCmd(cname, bin, portS string, args []string) CmdT {
 	c.args = args
 	c.portS = portS
 
+	c.outDir = fp.Join(t.Host, portS, c.name)
 	c.fileOut = fp.Join(t.Host, portS, c.name+".out")
 	c.jsonOut = fp.Join(t.Host, portS, c.name+".json")
+
+	c.start = time.Now()
 
 	MU.Lock()
 	// first check if cmd already exists and has non-empty args
@@ -45,14 +48,7 @@ func (t *TargetT) prepareCmd(cname, bin, portS string, args []string) CmdT {
 
 func (t *TargetT) runCmd(c CmdT) {
 	if cmdIsDone(c.fileOut) {
-		Print("%s\t%s already done\n", c.portS, c.name)
-		c.status = "ok"
-		c.done = true
-
-		MU.Lock()
-		t.Cmds[c.name] = c
-		MU.Unlock()
-
+		t.markCmdDone(c)
 		return
 	}
 
@@ -63,14 +59,12 @@ func (t *TargetT) runCmd(c CmdT) {
 	errExit(err)
 	defer fd.Close()
 
-	fmt.Fprintf(fd, "sectest cmd: %s %s\n", c.bin, getQuotedArgs(c.args))
-	fmt.Fprintf(fd, "%s\n", str.Repeat("-", 79))
+	printFileOutHeader(c, fd)
 
 	cmd := exec.Command(c.bin, c.args...)
 	cmd.Stdout = fd
 	cmd.Stderr = fd
 
-	c.start = time.Now()
 	err = cmd.Run()
 
 	if errInOutFile(c.fileOut) {
@@ -88,12 +82,31 @@ func (t *TargetT) runCmd(c CmdT) {
 	t.Cmds[c.name] = c
 	MU.Unlock()
 
-	fmt.Fprintf(fd, "%s\n", str.Repeat("-", 79))
-	fmt.Fprintf(fd, "sectest cmd status: %s\n", c.status)
-	fmt.Fprintf(fd, "sectest cmd time: %s\n", c.runTime.Round(time.Second))
+	printFileOutFooter(c, fd)
 
 	msg := "%s\t%s done in %s, %s\n"
 	Print(msg, c.portS, c.name, c.runTime.Round(time.Second), c.status)
+}
+
+func (t *TargetT) markCmdDone(c CmdT) {
+	Print("%s\t%s already done\n", c.portS, c.name)
+	c.status = "ok"
+	c.done = true
+
+	MU.Lock()
+	t.Cmds[c.name] = c
+	MU.Unlock()
+}
+
+func printFileOutHeader(c CmdT, fd *os.File) {
+	fmt.Fprintf(fd, "sectest cmd: %s %s\n", c.bin, getQuotedArgs(c.args))
+	fmt.Fprintf(fd, "%s\n", str.Repeat("-", 79))
+}
+
+func printFileOutFooter(c CmdT, fd *os.File) {
+	fmt.Fprintf(fd, "%s\n", str.Repeat("-", 79))
+	fmt.Fprintf(fd, "sectest cmd status: %s\n", c.status)
+	fmt.Fprintf(fd, "sectest cmd time: %s\n", c.runTime.Round(time.Second))
 }
 
 func (t *TargetT) AllScheduled() bool {
@@ -227,6 +240,15 @@ func stringNeedsQuote(s string) bool {
 		}
 	}
 
+	return false
+}
+
+func stringInSlice(s string, slice []string) bool {
+	for _, el := range slice {
+		if el == s {
+			return true
+		}
+	}
 	return false
 }
 

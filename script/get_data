@@ -181,6 +181,7 @@ c:/users/\${VAR}/.ssh/id_ed25519
 c:/users/\${VAR}/.ssh/id_ed25519.pub
 c:/users/\${VAR}/.ssh/id_ed25519_sk
 c:/users/\${VAR}/.ssh/id_ed25519_sk.pub
+c:/users/\${VAR}/ntuser.dat
 c:/users/\${VAR}/desktop/user
 c:/users/\${VAR}/desktop/flag
 c:/users/\${VAR}/desktop/user.txt
@@ -191,9 +192,64 @@ c:/users/\${VAR}/documents/user.txt
 c:/users/\${VAR}/documents/flag.txt
 EOF
 
+# user name list
+# --------------
 
+cat ${LIST_DIR}/Usernames/Names/names.txt \
+  ${LIST_DIR}/Usernames/Names/familynames-usa-top1000.txt \
+  ${LIST_DIR}/Usernames/Names/malenames-usa-top1000.txt \
+  ${LIST_DIR}/Usernames/cirt-default-usernames.txt \
+  ${LIST_DIR}/Usernames/top-usernames-shortlist.txt \
+  | sed 's/[^[:print:]]//' \
+  | grep -vi 'username' \
+  | grep -vi '^the$' \
+  | grep -vF '!' \
+  | grep -vF '*' \
+  | grep -vF '$' \
+  | grep -vF '%' \
+  | grep -vF '#' \
+  | grep -vF '&' \
+  | grep -vF '@' \
+  | grep -vF '(' \
+  | grep -vF ')' \
+  | grep -vF '<' \
+  | grep -vF '>' \
+  | grep -vF '[' \
+  | grep -vF ']' \
+  | grep -vF '{' \
+  | grep -vF '}' \
+  | grep -vF '/' \
+  | grep -vF '\\' \
+  | grep -vF '^' \
+  | grep -vF "'" \
+  | grep -vF '"' \
+  | grep -vF ':' \
+  | grep -vF '.' \
+  | grep -vF ',' \
+  | grep -vF '~' \
+  | grep -v -- '^-' \
+  | grep -v -- '-$' \
+  | grep -v '^[0-9]' \
+  > ../data/usernames.tmp
 
-# nmap port split is not used currently by sectest, keeping it just in case
+echo default >> ../data/usernames.tmp
+
+cat ../data/usernames.tmp \
+  | tr '[A-Z]' '[a-z]' \
+  | sed 's/.*/\u&/' \
+  > ../data/usernames.tmp2
+
+cat ../data/usernames.tmp \
+  | tr '[A-Z]' '[a-z]' \
+  > ../data/usernames.tmp3
+
+cat ../data/usernames.tmp \
+  | tr '[a-z]' '[A-Z]' \
+  > ../data/usernames.tmp4
+
+cat ../data/usernames.tmp* | sort -u > ../data/usernames
+rm ../data/usernames.tmp*
+
 
 # nmap port lists
 # ---------------

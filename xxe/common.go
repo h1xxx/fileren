@@ -38,17 +38,14 @@ type LeafT struct {
 	Value string
 }
 
-func GetParams(url, xmlTemplate, cookie, outDir, fileList string, fileListVars []string) (ParamsT, error) {
+func GetParams(url, xmlData, cookie, outDir, outFile, fileList string, fileListVars []string, truncLog bool) (ParamsT, error) {
 	var p ParamsT
+	var err error
 
 	p.Url = url
 
-	xmlData, err := ioutil.ReadFile(xmlTemplate)
-	if err != nil {
-		return p, err
-	}
-	p.XmlData = string(xmlData)
-	p.XmlDecoder = xml.NewDecoder(bytes.NewBuffer(xmlData))
+	p.XmlData = xmlData
+	p.XmlDecoder = xml.NewDecoder(bytes.NewBuffer([]byte(xmlData)))
 
 	p.Cookie = cookie
 	p.OutDir = outDir
@@ -60,8 +57,14 @@ func GetParams(url, xmlTemplate, cookie, outDir, fileList string, fileListVars [
 	}
 
 	os.MkdirAll(p.OutDir, 0750)
-	opts := os.O_CREATE | os.O_TRUNC | os.O_WRONLY
-	p.LogFd, err = os.OpenFile(p.OutDir+"/xxetest.log", opts, 0644)
+	opts := os.O_CREATE | os.O_WRONLY
+	if truncLog {
+		opts = opts | os.O_TRUNC
+	} else {
+		opts = opts | os.O_APPEND
+	}
+
+	p.LogFd, err = os.OpenFile(outFile, opts, 0644)
 	if err != nil {
 		return p, err
 	}

@@ -38,7 +38,14 @@ func (t *TargetT) TestHttp(pi *PortInfoT) {
 		wg.Wait()
 	}
 
-	// todo: this doesn't seem to be efficient, optimize
+	if t.XxeReqFile != "" && len(t.Auth["weblogin"]) > 0 {
+		creds := t.Auth["weblogin"][0]
+		t.testXxeInjection(t.Host, pi, &creds)
+	} else if t.XxeReqFile != "" {
+		t.testXxeInjection(t.Host, pi, nil)
+	}
+
+	// todo: this doesn't seem to be efficient, optimize or drop
 	/*
 		wg.Add(1)
 		go t.ffufUrlEnumRec(t.Host, "1", pi, wg)
